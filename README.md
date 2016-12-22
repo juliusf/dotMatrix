@@ -1,2 +1,2 @@
 # dotMatrix
-My attempt at emulating the classic gamebo
+My attempt at emulating the classic gameboy
