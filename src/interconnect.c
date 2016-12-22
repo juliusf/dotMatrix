@@ -15,7 +15,6 @@ void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu){
 }
 
 uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
-	printf("reading from ram: 0x%x \n", addr);
 	if (interconnect->cpu->reg_pc >= 0x100){ // Init sequence complete, leaving bios
 		interconnect->inBios = FALSE;
 		debug_print("bios initilization complete%s", "\n");
@@ -28,9 +27,13 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 	return interconnect->ram[addr];
 }
 
+inline uint16_t read_addr_from_ram(Interconnect* interconnect, uint16_t addr)
+{
+	return   (read_from_ram(interconnect, addr) << 8) | read_from_ram(interconnect, addr + 1);
+}
+
 void load_dmg_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* rom){
 	debug_print("mapping bios rom%s", "\n");
 	assert(romLen == 256);
 	memcpy(interconnect->bios, rom, romLen);
-	printf("first instruction: 0x%x\n", interconnect->bios[0]);
 }

@@ -4,6 +4,7 @@
 #define PROGRAMSTART 0x0
 
 #include <stdint.h>
+#include <stddef.h>
 
 
 typedef struct Cpu_t{
@@ -52,14 +53,18 @@ typedef struct Cpu_t{
 
 typedef struct Instruction_t {
 	char *disassembly;
+	uint8_t parLength;
 	uint8_t cycles;
-	void (*execute)(Cpu*,uint16_t);
+	void (*execute)(Cpu*);
 } Instruction;
 
 void initialize_cpu(Cpu** cpu, struct Interconnect_t* interconnect);
-void op_not_implemented(Cpu* cpu, uint16_t instruction);
+
 void run(Cpu* cpu);
 
-static Instruction instructions[256] = { {"NOT IMPLEMENTED", 0, op_not_implemented} };
+static Instruction instructions[256];
+
+
+#include "cpu_inline.h"
 
 #endif /* CPU_H */

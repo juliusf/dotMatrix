@@ -17,12 +17,6 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	initialize_opcodes();
 }
 
-void initialize_opcodes(){
-	for (int i = 0; i < 256; i++){
-		instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, op_not_implemented};
-	}
-}
-
 void run(Cpu* cpu){
 	debug_print("starting execution%s", "\n");
 	while(1){
@@ -39,15 +33,39 @@ void run(Cpu* cpu){
 void run_instruction(Cpu* cpu){
 
 	uint8_t opcode = read_from_ram(cpu->interconnect, cpu->reg_pc);
-	instructions[opcode].execute(cpu, opcode);
+	
+	if (instructions[opcode].execute)
+	{
+		instructions[opcode].execute(cpu);
+	}else{
+		printf("Instruction 0x%x ot implemented!\n", opcode);
+		exit(-1);
+	}
+	
+	#ifdef DEBUG
+    if(instructions[opcode].parLength == 2){
+    	uint16_t value = get_two_byte_parameter(cpu);
+    	printf( (instructions[opcode].disassembly), value);
+    	printf( "\n");	
+    }
+     
+     
+    #endif /* DEBUG */
+
 	cpu->cycles_left = instructions[opcode].cycles;
 
-	cpu->reg_pc++;
+	cpu->reg_pc+= instructions[opcode].parLength + 1;
 }
 
-void op_not_implemented(Cpu* cpu, uint16_t instruction){
-	printf("Instruction 0x%x not implemented!\n", instruction);
-	exit(-1);
+void opCode0x31(Cpu* cpu){
+	uint16_t value = get_two_byte_parameter(cpu);
+	cpu->reg_sp = value;
 }
 
+void initialize_opcodes(){
+	for (int i = 0; i < 256; i++){
+		instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, 0, NULL};
+	}
 
+	instructions[0x31] = (Instruction){"LD SP, $%x", 2, 12, opCode0x31};
+}
