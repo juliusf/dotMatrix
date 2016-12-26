@@ -29,7 +29,13 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 
 inline uint16_t read_addr_from_ram(Interconnect* interconnect, uint16_t addr)
 {
-	return   (read_from_ram(interconnect, addr) << 8) | read_from_ram(interconnect, addr + 1);
+	return   (read_from_ram(interconnect, addr+1) << 8) | (read_from_ram(interconnect, addr) );
+}
+
+
+void write_to_ram(Interconnect* interconnect, uint16_t addr, uint8_t value)
+{
+	interconnect->ram[addr] = value;
 }
 
 void load_dmg_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* rom){

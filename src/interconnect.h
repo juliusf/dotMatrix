@@ -20,5 +20,7 @@ void load_dmg_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* ro
 uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr);
 uint16_t read_addr_from_ram(Interconnect* interconnect, uint16_t addr);
 
+void write_to_ram(Interconnect* interconnect, uint16_t addr, uint8_t value);
+
 #endif /*INTERCONNECT_H*/
 
