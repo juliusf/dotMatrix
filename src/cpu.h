@@ -53,9 +53,9 @@ typedef struct Cpu_t{
 	};
 	uint16_t reg_sp;
 	uint16_t reg_pc;
-	uint8_t reg_flag;
 	struct Interconnect_t* interconnect;
 	uint8_t cycles_left;
+	uint64_t instruction_count;
 } Cpu;
 
 typedef struct Instruction_t {

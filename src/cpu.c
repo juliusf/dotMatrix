@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "util.h"
 #include "interconnect.h"
+#include "cpu_opcodes.h"
 
 void initialize_opcodes();
 void run_instruction(Cpu* cpu);
@@ -13,7 +15,10 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 
 	*cpu = (Cpu*) malloc(sizeof(Cpu));
+	memset((*cpu), 0, sizeof(Cpu));
 	(*cpu)->reg_pc = PROGRAMSTART;
+	(*cpu)->reg_f = 0;
+	(*cpu)->instruction_count = 0;
 	(*cpu)->interconnect = interconnect;
 	initialize_opcodes();
 }
@@ -42,29 +47,19 @@ void run_instruction(Cpu* cpu){
 	}else{
 		run_instruction_set(cpu, instructions, opcode);
 	}
-	
+
+	cpu->instruction_count++;
 	
 }
 
 void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opcode){
 	
-	int8_t jmp_occured = 0;
-	if (instruction_set[opcode].execute)
-	{
-		jmp_occured = instruction_set[opcode].execute(cpu);
-	}else{
-		if (instruction_set == cb_instructions){
-			printf("0x%x: CB prefixed instruction 0x%x ot implemented!\n", cpu->reg_pc, opcode);
-		}else
-		{
-			printf("0x%x: Instruction 0x%x ot implemented!\n", cpu->reg_pc, opcode);
-		}
-		exit(-1);
-	}
+
 	
 	#ifdef DEBUG
-    
+    printf("%lu| ", cpu->instruction_count);
     switch(instruction_set[opcode].parLength){
+
     	case 0:{
     		printf("0x%x: %s \n", cpu->reg_pc, instruction_set[opcode].disassembly);
     	}
@@ -89,7 +84,21 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
     };
      
     #endif /* DEBUG */
-
+	printf("%x|%x\n", opcode, cpu->reg_f);
+	int8_t jmp_occured = 0;
+	if (instruction_set[opcode].execute)
+	{
+		jmp_occured = instruction_set[opcode].execute(cpu);
+	}else{
+		if (instruction_set == cb_instructions){
+			printf("0x%x: CB prefixed instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
+		}else
+		{
+			printf("0x%x: Instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
+		}
+		exit(-1);
+	}
+	
 	cpu->cycles_left = instruction_set[opcode].cycles;
 
 	if (! jmp_occured)
@@ -98,66 +107,58 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 }
 //--------------------------------------------------------------
 
-int8_t opCode0x20(Cpu* cpu){ // JRNZ
-	int8_t addr_offset = get_one_byte_parameter(cpu); 
-	if (! get_bit( &(cpu->reg_flag), FLAG_BIT_Z)){
-		cpu->reg_pc += addr_offset;
-		return PC_JMP;
-	}
-	return PC_NO_JMP;
-	
-}
 
-int8_t opCode0x21(Cpu* cpu){ // LD HL, $nn
-	uint16_t value = get_two_byte_parameter(cpu);
-	cpu->reg_hl = value;
-	return PC_NO_JMP;
-}
-
-int8_t opCode0x31(Cpu* cpu){ // LD SP, $nn
-	uint16_t value = get_two_byte_parameter(cpu);
-	cpu->reg_sp = value;
-	return PC_NO_JMP;
-}
-
-int8_t opCode0x32(Cpu* cpu){ // LDD (HL), A
-	write_to_ram(cpu->interconnect, cpu->reg_hl, cpu->reg_a);
-	cpu->reg_hl--;
-	return PC_NO_JMP;
-}
-
-int8_t opCode0xaf(Cpu* cpu){// XOR A, A
-	uint8_t result = cpu->reg_a ^ cpu->reg_a;
-	cpu->reg_a = result;
-	return PC_NO_JMP;
-}
-
-//---------------------------------------------------------------
-
-int8_t opCode0xcb7c(Cpu* cpu){ // BIT 7h
-	if ( ! get_bit(&cpu->reg_h, 7) ){
-		set_bit(&cpu->reg_flag, FLAG_BIT_Z);	
-	}else{
-		clear_bit(&cpu->reg_flag, FLAG_BIT_Z);
-	}
-
-	clear_bit(&cpu->reg_flag, FLAG_BIT_N);
-	set_bit(&cpu->reg_flag, FLAG_BIT_H);
-	return PC_NO_JMP;
-}
 
 void initialize_opcodes(){
 	for (int i = 0; i < 256; i++){
 		instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, 0, NULL};
 		cb_instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, 0, NULL};
 	}
+	instructions[0x05] = (Instruction){"DEC B", 0, 4, opCode0x05};
+	instructions[0x06] = (Instruction){"LD B, 0x%x", 1, 8, opCode0x06};
+	instructions[0x08] = (Instruction){"LD $%x, SP", 2, 20, opCode0x08};
+	instructions[0x0c] = (Instruction){"INC C", 0, 4, opCode0x0c};
+	instructions[0x0e] = (Instruction){"LD C, 0x%x", 1, 8, opCode0x0e};
+	
+	instructions[0x11] = (Instruction){"LD DE, $%x", 2, 12, opCode0x11};
+	instructions[0x13] = (Instruction){"INC DE", 0, 8, opCode0x13};
+	instructions[0x17] = (Instruction){"RLA", 0, 4, opCode0x17};
+	instructions[0x1a] = (Instruction){"LD A, (DE)", 0, 8, opCode0x1a};
 
-	instructions[0x20] = (Instruction){"JRNZ, $%x", 1, 8, opCode0x20};
+	instructions[0x20] = (Instruction){"JRNZ, 0x%x", 1, 8, opCode0x20};
 	instructions[0x21] = (Instruction){"LD HL, $%x", 2, 12, opCode0x21};
+	instructions[0x22] = (Instruction){"LDI HL, A", 0, 8, opCode0x22};
+	instructions[0x23] = (Instruction){"INC HL", 0, 8, opCode0x23};
+	instructions[0x28] = (Instruction){"JR Z, 0x%x", 1, 8, opCode0x28};
+
 	instructions[0x31] = (Instruction){"LD SP, $%x", 2, 12, opCode0x31};
 	instructions[0x32] = (Instruction){"LDD HL, A", 0, 8, opCode0x32};
+	instructions[0x3d] = (Instruction){"DEC A", 0, 4, opCode0x3d};
+	instructions[0x3e] = (Instruction){"LD A, $%x", 1, 8, opCode0x3e};
+
+	instructions[0x4f] = (Instruction){"LD C,A", 0, 4, opCode0x4f};
+
+	instructions[0x77] = (Instruction){"LD (HL), A", 0, 8, opCode0x77};
+	instructions[0x7b] = (Instruction){"LD A,E", 0, 4, opCode0x7b};
+
 	instructions[0xaf] = (Instruction){"XOR A, A", 0, 4, opCode0xaf};
 
+	instructions[0xc1] = (Instruction){"POP BC", 0, 12, opCode0xc1};
+	instructions[0xc5] = (Instruction){"PUSH BC", 0, 16, opCode0xc5};
+	instructions[0xc9] = (Instruction){"RET", 0, 8, opCode0xc9};
+	instructions[0xcd] = (Instruction){"CALL $%x", 2, 12, opCode0xcd};
 
-	cb_instructions[0x7c] = (Instruction){"BIT 7, H", 0, 8, opCode0xaf};
+	instructions[0xe0] = (Instruction){"LDH 0x%x, A", 1, 12, opCode0xe0};
+	instructions[0xe2] = (Instruction){"LD (C),A", 0, 8, opCode0xe2};
+	instructions[0xea] = (Instruction){"LD $%x, A", 2, 16, opCode0xea};
+
+	instructions[0x2f] = (Instruction){"CPL", 0, 4, opCode0x2f};
+	instructions[0xff] = (Instruction){"RST 38", 0, 32, opCode0xff};
+	instructions[0xfe] = (Instruction){"CP SP", 1, 8, opCode0xfe};
+
+	//--------------------------------------------------------------------
+
+	cb_instructions[0x11] = (Instruction){"RL C", 0, 8, opCode0xcb11};
+	cb_instructions[0x7c] = (Instruction){"BIT 7, H", 0, 8, opCode0xcb7c};
+
 }

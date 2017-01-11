@@ -20,7 +20,7 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 		debug_print("bios initilization complete%s", "\n");
 	}
 
-	if (addr <= 0xFFFF && interconnect->inBios){
+	if (addr < 0x100 && interconnect->inBios){
 		return interconnect->bios[addr];	
 	}
 
@@ -36,6 +36,11 @@ inline uint16_t read_addr_from_ram(Interconnect* interconnect, uint16_t addr)
 void write_to_ram(Interconnect* interconnect, uint16_t addr, uint8_t value)
 {
 	interconnect->ram[addr] = value;
+}
+
+void write_addr_to_ram(Interconnect* interconnect, uint16_t addr, uint16_t value){
+	write_to_ram(interconnect, addr+1, value >> 8);
+	write_to_ram(interconnect, addr, value & 0x00FF);
 }
 
 void load_dmg_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* rom){

@@ -22,5 +22,7 @@ uint16_t read_addr_from_ram(Interconnect* interconnect, uint16_t addr);
 
 void write_to_ram(Interconnect* interconnect, uint16_t addr, uint8_t value);
 
+void write_addr_to_ram(Interconnect* interconnect, uint16_t addr, uint16_t value);
+
 #endif /*INTERCONNECT_H*/
 
