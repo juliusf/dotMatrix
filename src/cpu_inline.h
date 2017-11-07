@@ -5,6 +5,7 @@
 #include "interconnect.h"
 #include "util.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 static inline uint16_t get_two_byte_parameter(Cpu* cpu){
 	uint8_t addr = cpu->reg_pc + 1;
@@ -44,10 +45,7 @@ static inline void push_stack(Cpu* cpu, uint16_t addr){
 }
 
 static inline void clear_all_flags(Cpu* cpu){
-	clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
-	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
-	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
-	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	cpu->reg_f = FLAG_NONE;
 }
 
 static inline void toggle_flag(Cpu* cpu, uint8_t flag){
@@ -73,7 +71,6 @@ static inline uint8_t opcodes_rl_rotate(Cpu* cpu, uint8_t* reg){
 	uint8_t carry = get_bit(&(cpu->reg_f), FLAG_BIT_C) ? 1 : 0;
 
 	uint8_t result = *reg;
-	
 	(( result & 0x80) != 0) ? set_bit( &(cpu->reg_f), FLAG_BIT_C) : clear_all_flags(cpu);
 	result <<=1;
 	result |= carry;
@@ -83,11 +80,9 @@ static inline uint8_t opcodes_rl_rotate(Cpu* cpu, uint8_t* reg){
 
 static inline void opcodes_rl(Cpu* cpu, uint8_t* reg){
 	uint8_t result = opcodes_rl_rotate(cpu, reg);
-	toggle_zero_flag_from_result(cpu, result);
-}
-
-static inline void opcodes_rl_reg_a(Cpu* cpu, uint8_t* reg){
-	opcodes_rl_rotate(cpu, reg);
+	if (reg == &(cpu->reg_a)){
+		toggle_zero_flag_from_result(cpu, result);
+	}
 }
 
 static inline void opcodes_cp(Cpu* cpu, uint8_t number){

@@ -2,10 +2,11 @@
 #define CPU_H
 
 #define PROGRAMSTART 0x0
-#define FLAG_BIT_Z 7
-#define FLAG_BIT_N 6
-#define FLAG_BIT_H 5
-#define FLAG_BIT_C 4
+#define FLAG_BIT_Z 0x7
+#define FLAG_BIT_N 0x6
+#define FLAG_BIT_H 0x5
+#define FLAG_BIT_C 0x4
+#define FLAG_NONE 0x0
 
 #define PC_NO_JMP 0
 #define PC_JMP 1

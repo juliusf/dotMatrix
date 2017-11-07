@@ -8,7 +8,7 @@
 
 void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu){
 	*interconnect = (Interconnect*) malloc(sizeof(Interconnect));
-	memset((*interconnect)->ram, 0, RAM_SIZE);
+	memset((*interconnect)->ram, 0xce, RAM_SIZE);
 	initialize_cpu(cpu, (*interconnect));
 	(*interconnect)->cpu = *cpu;
 	(*interconnect)->inBios = TRUE;

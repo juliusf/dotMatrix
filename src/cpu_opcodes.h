@@ -32,13 +32,13 @@ int8_t opCode0x0e(Cpu* cpu){ // LD C, n
 }
 
 int8_t opCode0x11(Cpu* cpu){ //LD, DE, n
-	uint16_t value = get_one_byte_parameter(cpu);
+	uint16_t value = get_two_byte_parameter(cpu);
 	cpu->reg_de = value;
 	return PC_NO_JMP;
 }
 
 int8_t opCode0x1a(Cpu* cpu){ // LD A, (DE)
-	cpu->reg_a = cpu->reg_de;
+	cpu->reg_a = read_from_ram(cpu->interconnect, cpu->reg_de);
 	return PC_NO_JMP;
 }
 
@@ -48,7 +48,7 @@ int8_t opCode0x13(Cpu* cpu){ // INC DE
 }
 
 int8_t opCode0x17(Cpu* cpu){ // RLA
-	opcodes_rl_reg_a(cpu, &(cpu->reg_a));
+	opcodes_rl(cpu, &(cpu->reg_a));
 	return PC_NO_JMP;
 }
 
@@ -83,8 +83,6 @@ int8_t opCode0x28(Cpu* cpu){ // JR Z, n
 
 	if (get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
 		cpu->reg_pc = cpu->reg_pc + 2 + offset;
-		printf("reg PC: %x\n", cpu->reg_pc);
-		exit(-1);
 		return PC_JMP;
 	}
 	return PC_NO_JMP;
@@ -127,7 +125,7 @@ int8_t opCode0x4f(Cpu* cpu){ //
 }
 
 int8_t opCode0x77(Cpu* cpu){ // LD (HL), A
-	cpu->reg_hl = cpu->reg_a;
+	write_to_ram(cpu->interconnect, cpu->reg_hl, cpu->reg_a);
 	return PC_NO_JMP;
 }
 

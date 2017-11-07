@@ -17,7 +17,10 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	*cpu = (Cpu*) malloc(sizeof(Cpu));
 	memset((*cpu), 0, sizeof(Cpu));
 	(*cpu)->reg_pc = PROGRAMSTART;
-	(*cpu)->reg_f = 0;
+	(*cpu)->reg_af = 0x01b0;
+	(*cpu)->reg_bc = 0x0013;
+	(*cpu)->reg_de = 0x00D8;
+	(*cpu)->reg_hl = 0x014d;
 	(*cpu)->instruction_count = 0;
 	(*cpu)->interconnect = interconnect;
 	initialize_opcodes();
@@ -84,7 +87,7 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
     };
      
     #endif /* DEBUG */
-	printf("%x|%x\n", opcode, cpu->reg_f);
+	
 	int8_t jmp_occured = 0;
 	if (instruction_set[opcode].execute)
 	{
@@ -97,6 +100,14 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 			printf("0x%x: Instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
 		}
 		exit(-1);
+	}
+	if (instruction_set == cb_instructions)
+	{
+		printf("opcode:cb%x|f:%x|a:%x|c:%x|b:%x|e:%x|d:%x|l:%x|h:%x|\n", opcode, cpu->reg_f, cpu->reg_a, cpu->reg_c, cpu->reg_b, cpu->reg_e, cpu->reg_d, cpu->reg_l, cpu->reg_h);
+	}
+	else
+	{
+		printf("opcode:%x|f:%x|a:%x|c:%x|b:%x|e:%x|d:%x|l:%x|h:%x|\n", opcode, cpu->reg_f, cpu->reg_a, cpu->reg_c, cpu->reg_b, cpu->reg_e, cpu->reg_d, cpu->reg_l, cpu->reg_h);
 	}
 	
 	cpu->cycles_left = instruction_set[opcode].cycles;
