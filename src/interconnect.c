@@ -15,9 +15,9 @@ void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu){
 }
 
 uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
-	if (interconnect->cpu->reg_pc >= 0x100){ // Init sequence complete, leaving bios
+	if (interconnect->inBios && interconnect->cpu->reg_pc >= 0x100){ // Init sequence complete, leaving bios
 		interconnect->inBios = FALSE;
-		debug_print("bios initilization complete%s", "\n");
+		debug_print("bios initialization complete%s", "\n");
 	}
 
 	if (addr < 0x100 && interconnect->inBios){

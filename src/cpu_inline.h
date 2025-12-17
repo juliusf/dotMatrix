@@ -170,4 +170,35 @@ static inline void cpu_dec_toggle_bits(Cpu* cpu, uint8_t* reg){
 	// C flag is unchanged (don't touch it)
 }
 
+static inline void opcodes_add(Cpu* cpu, uint8_t value){
+	// ADD: Z if result is 0, N=0, H if carry from bit 3, C if carry from bit 7
+	uint16_t result = cpu->reg_a + value;
+
+	// Set H flag if carry from bit 3 (half carry)
+	if (((cpu->reg_a & 0x0F) + (value & 0x0F)) > 0x0F) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	}
+
+	// Set C flag if carry from bit 7 (result > 0xFF)
+	if (result > 0xFF) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	cpu->reg_a = (uint8_t)result;
+
+	// Set Z flag if result is 0
+	if (cpu->reg_a == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N flag (ADD always clears N)
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+}
+
 #endif /*CPU_INLINE_H*/

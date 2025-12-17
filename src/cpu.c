@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "util.h"
 #include "interconnect.h"
@@ -60,7 +61,7 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 
 	
 	#ifdef DEBUG
-    printf("%lu| ", cpu->instruction_count);
+    printf("%" PRIu64 "| ", cpu->instruction_count);
     switch(instruction_set[opcode].parLength){
 
     	case 0:{
@@ -100,14 +101,6 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 			printf("0x%x: Instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
 		}
 		exit(-1);
-	}
-	if (instruction_set == cb_instructions)
-	{
-		printf("opcode:cb%x|f:%x|a:%x|c:%x|b:%x|e:%x|d:%x|l:%x|h:%x|\n", opcode, cpu->reg_f, cpu->reg_a, cpu->reg_c, cpu->reg_b, cpu->reg_e, cpu->reg_d, cpu->reg_l, cpu->reg_h);
-	}
-	else
-	{
-		printf("opcode:%x|f:%x|a:%x|c:%x|b:%x|e:%x|d:%x|l:%x|h:%x|\n", opcode, cpu->reg_f, cpu->reg_a, cpu->reg_c, cpu->reg_b, cpu->reg_e, cpu->reg_d, cpu->reg_l, cpu->reg_h);
 	}
 	
 	cpu->cycles_left = instruction_set[opcode].cycles;
@@ -150,8 +143,18 @@ void initialize_opcodes(void){
 	instructions[0x4f] = (Instruction){"LD C,A", 0, 4, opCode0x4f};
 
 	instructions[0x77] = (Instruction){"LD (HL), A", 0, 8, opCode0x77};
+	instructions[0x78] = (Instruction){"LD A,B", 0, 4, opCode0x78};
 	instructions[0x7b] = (Instruction){"LD A,E", 0, 4, opCode0x7b};
 	instructions[0x7d] = (Instruction){"LD A,L", 0, 4, opCode0x7d};
+
+	instructions[0x80] = (Instruction){"ADD A,B", 0, 4, opCode0x80};
+	instructions[0x81] = (Instruction){"ADD A,C", 0, 4, opCode0x81};
+	instructions[0x82] = (Instruction){"ADD A,D", 0, 4, opCode0x82};
+	instructions[0x83] = (Instruction){"ADD A,E", 0, 4, opCode0x83};
+	instructions[0x84] = (Instruction){"ADD A,H", 0, 4, opCode0x84};
+	instructions[0x85] = (Instruction){"ADD A,L", 0, 4, opCode0x85};
+	instructions[0x86] = (Instruction){"ADD A,(HL)", 0, 8, opCode0x86};
+	instructions[0x87] = (Instruction){"ADD A,A", 0, 4, opCode0x87};
 
 	instructions[0xaf] = (Instruction){"XOR A, A", 0, 4, opCode0xaf};
 
@@ -159,6 +162,7 @@ void initialize_opcodes(void){
 
 	instructions[0xc1] = (Instruction){"POP BC", 0, 12, opCode0xc1};
 	instructions[0xc5] = (Instruction){"PUSH BC", 0, 16, opCode0xc5};
+	instructions[0xc6] = (Instruction){"ADD A,0x%x", 1, 8, opCode0xc6};
 	instructions[0xc9] = (Instruction){"RET", 0, 8, opCode0xc9};
 	instructions[0xcd] = (Instruction){"CALL $%x", 2, 12, opCode0xcd};
 

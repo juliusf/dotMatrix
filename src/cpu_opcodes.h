@@ -131,6 +131,11 @@ int8_t opCode0x77(Cpu* cpu){ // LD (HL), A
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x78(Cpu* cpu){ // LD A, B
+	cpu->reg_a = cpu->reg_b;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x7b(Cpu* cpu){ // LD A, E
 	cpu->reg_a = cpu->reg_e;
 	return PC_NO_JMP;
@@ -138,6 +143,47 @@ int8_t opCode0x7b(Cpu* cpu){ // LD A, E
 
 int8_t opCode0x7d(Cpu* cpu){ // LD A, L
 	cpu->reg_a = cpu->reg_l;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x80(Cpu* cpu){ // ADD A, B
+	opcodes_add(cpu, cpu->reg_b);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x81(Cpu* cpu){ // ADD A, C
+	opcodes_add(cpu, cpu->reg_c);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x82(Cpu* cpu){ // ADD A, D
+	opcodes_add(cpu, cpu->reg_d);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x83(Cpu* cpu){ // ADD A, E
+	opcodes_add(cpu, cpu->reg_e);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x84(Cpu* cpu){ // ADD A, H
+	opcodes_add(cpu, cpu->reg_h);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x85(Cpu* cpu){ // ADD A, L
+	opcodes_add(cpu, cpu->reg_l);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x86(Cpu* cpu){ // ADD A, (HL)
+	uint8_t value = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	opcodes_add(cpu, value);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x87(Cpu* cpu){ // ADD A, A
+	opcodes_add(cpu, cpu->reg_a);
 	return PC_NO_JMP;
 }
 
@@ -172,6 +218,12 @@ int8_t opCode0xc1(Cpu* cpu){ // POP BC
 
 int8_t opCode0xc5(Cpu* cpu){ // PUSH BC
 	push_stack(cpu, cpu->reg_bc);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xc6(Cpu* cpu){ // ADD A, n
+	uint8_t value = get_one_byte_parameter(cpu);
+	opcodes_add(cpu, value);
 	return PC_NO_JMP;
 }
 
