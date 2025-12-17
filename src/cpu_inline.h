@@ -50,9 +50,9 @@ static inline void clear_all_flags(Cpu* cpu){
 
 static inline void toggle_flag(Cpu* cpu, uint8_t flag){
 	if( get_bit(&(cpu->reg_f), flag) ){
-		set_bit( &(cpu->reg_f), flag);
-	}else{
 		clear_bit( &(cpu->reg_f), flag);
+	}else{
+		set_bit( &(cpu->reg_f), flag);
 	}
 }
 
@@ -67,22 +67,45 @@ static inline void toggle_zero_flag_from_result(Cpu* cpu, uint8_t result){
 }
 
 static inline uint8_t opcodes_rl_rotate(Cpu* cpu, uint8_t* reg){
+	// RL: Rotate left through carry
+	// Old bit 7 -> C flag, C flag -> bit 0
 
-	uint8_t carry = get_bit(&(cpu->reg_f), FLAG_BIT_C) ? 1 : 0;
-
+	uint8_t old_carry = get_bit(&(cpu->reg_f), FLAG_BIT_C) ? 1 : 0;
 	uint8_t result = *reg;
-	(( result & 0x80) != 0) ? set_bit( &(cpu->reg_f), FLAG_BIT_C) : clear_all_flags(cpu);
-	result <<=1;
-	result |= carry;
+
+	// Set C flag to old bit 7
+	if ((result & 0x80) != 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	// Rotate left and insert old carry at bit 0
+	result <<= 1;
+	result |= old_carry;
 	*reg = result;
+
+	// Clear N and H flags
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+
 	return result;
 }
 
 static inline void opcodes_rl(Cpu* cpu, uint8_t* reg){
 	uint8_t result = opcodes_rl_rotate(cpu, reg);
-	if (reg == &(cpu->reg_a)){
-		toggle_zero_flag_from_result(cpu, result);
+	// Set Z flag if result is 0 (but NOT for RLA - only for CB prefixed RL)
+	// Note: For RLA (0x17), Z flag should NOT be affected
+	// For CB RL r, Z flag should be set if result is 0
+	if (reg != &(cpu->reg_a)){
+		// CB prefixed RL - set Z flag
+		if (result == 0) {
+			set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+		} else {
+			clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+		}
 	}
+	// For RLA (reg == A), don't touch Z flag
 }
 
 static inline void opcodes_cp(Cpu* cpu, uint8_t number){
@@ -102,12 +125,49 @@ static inline void opcodes_cp(Cpu* cpu, uint8_t number){
 }
 
 static inline void cpu_inc_toggle_bits(Cpu* cpu, uint8_t* reg){
+	// INC: Z if result is 0, N=0, H if overflow from bit 3, C unchanged
 
-	get_bit( &(cpu->reg_f), FLAG_BIT_C) ? set_bit(&(cpu->reg_f), FLAG_BIT_C) : clear_all_flags(cpu);
-	toggle_zero_flag_from_result(cpu, *reg);
-	if ((*reg & 0x0F) == 0x00){
-		toggle_flag(cpu, FLAG_BIT_H);
+	// Set Z flag if result is 0
+	if (*reg == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
 	}
+
+	// Clear N flag (INC always clears N)
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+
+	// Set H flag if lower nibble is 0 (overflow from bit 3)
+	if ((*reg & 0x0F) == 0x00) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	}
+
+	// C flag is unchanged (don't touch it)
+}
+
+static inline void cpu_dec_toggle_bits(Cpu* cpu, uint8_t* reg){
+	// DEC: Z if result is 0, N=1, H if borrow from bit 4, C unchanged
+
+	// Set Z flag if result is 0
+	if (*reg == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Set N flag (DEC always sets N)
+	set_bit(&(cpu->reg_f), FLAG_BIT_N);
+
+	// Set H flag if lower nibble is 0xF (borrow from bit 4)
+	if ((*reg & 0x0F) == 0x0F) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	}
+
+	// C flag is unchanged (don't touch it)
 }
 
 #endif /*CPU_INLINE_H*/

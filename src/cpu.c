@@ -8,7 +8,7 @@
 #include "interconnect.h"
 #include "cpu_opcodes.h"
 
-void initialize_opcodes();
+void initialize_opcodes(void);
 void run_instruction(Cpu* cpu);
 void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opcode);
 
@@ -120,7 +120,7 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 
 
 
-void initialize_opcodes(){
+void initialize_opcodes(void){
 	for (int i = 0; i < 256; i++){
 		instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, 0, NULL};
 		cb_instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, 0, NULL};
@@ -151,8 +151,11 @@ void initialize_opcodes(){
 
 	instructions[0x77] = (Instruction){"LD (HL), A", 0, 8, opCode0x77};
 	instructions[0x7b] = (Instruction){"LD A,E", 0, 4, opCode0x7b};
+	instructions[0x7d] = (Instruction){"LD A,L", 0, 4, opCode0x7d};
 
 	instructions[0xaf] = (Instruction){"XOR A, A", 0, 4, opCode0xaf};
+
+	instructions[0xbe] = (Instruction){"CP (HL)", 0, 8, opCode0xbe};
 
 	instructions[0xc1] = (Instruction){"POP BC", 0, 12, opCode0xc1};
 	instructions[0xc5] = (Instruction){"PUSH BC", 0, 16, opCode0xc5};
@@ -161,6 +164,7 @@ void initialize_opcodes(){
 
 	instructions[0xe0] = (Instruction){"LDH 0x%x, A", 1, 12, opCode0xe0};
 	instructions[0xe2] = (Instruction){"LD (C),A", 0, 8, opCode0xe2};
+	instructions[0xe5] = (Instruction){"PUSH HL", 0, 16, opCode0xe5};
 	instructions[0xea] = (Instruction){"LD $%x, A", 2, 16, opCode0xea};
 
 	instructions[0x2f] = (Instruction){"CPL", 0, 4, opCode0x2f};

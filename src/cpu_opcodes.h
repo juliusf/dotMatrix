@@ -1,7 +1,7 @@
 
 int8_t opCode0x05(Cpu* cpu){ // DEC B
 	cpu->reg_b--;
-	cpu_inc_toggle_bits(cpu, &(cpu->reg_b));
+	cpu_dec_toggle_bits(cpu, &(cpu->reg_b));
 
 	return PC_NO_JMP;
 }
@@ -89,7 +89,9 @@ int8_t opCode0x28(Cpu* cpu){ // JR Z, n
 }	
 
 int8_t opCode0x2f(Cpu* cpu){ // CPL
-	cpu->reg_a = cpu->reg_a ^ 1;
+	// CPL: Complement A (invert all bits)
+	// N=1, H=1, Z and C unchanged
+	cpu->reg_a = ~cpu->reg_a;
 	set_bit(&(cpu->reg_f), FLAG_BIT_N);
 	set_bit(&(cpu->reg_f), FLAG_BIT_H);
 	return PC_NO_JMP;
@@ -109,7 +111,7 @@ int8_t opCode0x32(Cpu* cpu){ // LDD (HL), A
 
 int8_t opCode0x3d(Cpu* cpu){ // DEC A
 	cpu->reg_a--;
-	cpu_inc_toggle_bits(cpu, &(cpu->reg_a));
+	cpu_dec_toggle_bits(cpu, &(cpu->reg_a));
 	return PC_NO_JMP;
 }
 
@@ -134,6 +136,11 @@ int8_t opCode0x7b(Cpu* cpu){ // LD A, E
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x7d(Cpu* cpu){ // LD A, L
+	cpu->reg_a = cpu->reg_l;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xaf(Cpu* cpu){// XOR A, A
 	uint8_t result = cpu->reg_a ^ cpu->reg_a;
 
@@ -149,6 +156,12 @@ int8_t opCode0xaf(Cpu* cpu){// XOR A, A
 
 
 
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xbe(Cpu* cpu){ // CP (HL)
+	uint8_t value = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	opcodes_cp(cpu, value);
 	return PC_NO_JMP;
 }
 
@@ -189,9 +202,14 @@ int8_t opCode0xe2(Cpu* cpu){ // LD(C), A
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xe5(Cpu* cpu){ // PUSH HL
+	push_stack(cpu, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xea(Cpu* cpu){ // LD (nn), A
 	uint16_t addr = get_two_byte_parameter(cpu);
-	write_addr_to_ram(cpu->interconnect, addr, cpu->reg_a);
+	write_to_ram(cpu->interconnect, addr, cpu->reg_a);
 	return PC_NO_JMP;
 }
 
