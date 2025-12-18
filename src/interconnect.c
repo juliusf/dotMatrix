@@ -18,7 +18,7 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 	if (interconnect->inBios && interconnect->cpu->reg_pc >= 0x100){ // Init sequence complete, leaving bios
 		interconnect->inBios = FALSE;
 		debug_print("bios initialization complete%s", "\n");
-		exit(0);
+		// exit(0); // Removed: let emulator continue running
 	}
 
 	if (addr < 0x100 && interconnect->inBios){

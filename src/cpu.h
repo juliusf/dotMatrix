@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <pthread.h>
 
 typedef struct InstructionTrace_t {
 	char text[256];
@@ -65,6 +66,7 @@ typedef struct Cpu_t{
 	struct Interconnect_t* interconnect;
 	uint8_t cycles_left;
 	uint64_t instruction_count;
+	volatile int should_stop;
 } Cpu;
 
 typedef struct Instruction_t {
@@ -77,6 +79,9 @@ typedef struct Instruction_t {
 void initialize_cpu(Cpu** cpu, struct Interconnect_t* interconnect);
 
 void run(Cpu* cpu);
+void* cpu_thread_run(void* arg);
+pthread_t start_cpu_thread(Cpu* cpu);
+void stop_cpu(Cpu* cpu);
 
 #ifdef DEBUG
 void add_instruction_to_buffer(uint64_t instruction_count, uint16_t pc, const char* text);

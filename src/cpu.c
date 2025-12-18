@@ -57,13 +57,14 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	(*cpu)->reg_hl = 0x014d;
 	(*cpu)->instruction_count = 0;
 	(*cpu)->interconnect = interconnect;
+	(*cpu)->should_stop = 0;
 	initialize_opcodes();
 }
 
 void run(Cpu* cpu){
 	debug_print("starting execution%s", "\n");
-	while(1){
-		
+	while(!cpu->should_stop){
+
 		if (cpu->cycles_left == 0){
 			run_instruction(cpu);
 			assert(cpu->cycles_left > 0);
@@ -71,6 +72,23 @@ void run(Cpu* cpu){
 		cpu->cycles_left--;
 
 	}
+	debug_print("cpu execution stopped%s", "\n");
+}
+
+void* cpu_thread_run(void* arg){
+	Cpu* cpu = (Cpu*)arg;
+	run(cpu);
+	return NULL;
+}
+
+pthread_t start_cpu_thread(Cpu* cpu){
+	pthread_t thread;
+	pthread_create(&thread, NULL, cpu_thread_run, cpu);
+	return thread;
+}
+
+void stop_cpu(Cpu* cpu){
+	cpu->should_stop = 1;
 }
 
 void run_instruction(Cpu* cpu){

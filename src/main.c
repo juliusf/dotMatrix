@@ -7,6 +7,7 @@
 #include "util.h"
 #include "cpu.h"
 #include "interconnect.h"
+#include "video.h"
 
 #ifdef DEBUG
 void sigterm_handler(int signum){
@@ -48,7 +49,21 @@ int main(int argc, const char* argv[]){
     signal(SIGINT, sigterm_handler);
 #endif
 
-    run(cpu);
+    Video* video = NULL;
+    initialize_video(&video);
+
+    fprintf(stderr, "Starting CPU thread...\n");
+    pthread_t cpu_thread = start_cpu_thread(cpu);
+
+    fprintf(stderr, "Starting video loop in main thread. Close the window to exit.\n");
+    run_video_loop(video);
+
+    fprintf(stderr, "Window closed. Stopping CPU thread...\n");
+    stop_cpu(cpu);
+    pthread_join(cpu_thread, NULL);
+    fprintf(stderr, "CPU thread stopped cleanly.\n");
+
+    free(video);
 
     return 0;
 }
