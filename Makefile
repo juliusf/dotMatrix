@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=--std=c11 -pedantic -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter -Wno-overlength-strings -g
+CFLAGS=--std=c11 -pedantic -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter -Wno-overlength-strings -g -O2
 LDFLAGS=-lraylib -lpthread
 SOURCES=src/main.c src/util.c src/cpu.c src/interconnect.c src/video.c src/ppu.c
 OBJECTS=$(SOURCES:.c=.o)

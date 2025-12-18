@@ -67,6 +67,9 @@ typedef struct Cpu_t{
 	uint8_t cycles_left;
 	uint64_t instruction_count;
 	volatile int should_stop;
+	uint8_t ime;  // Interrupt Master Enable flag
+	uint8_t ime_scheduled;  // Set to 1 when EI is executed, IME enabled after next instruction
+	uint8_t halted;  // Set to 1 when HALT is executed, CPU waits for interrupt
 } Cpu;
 
 typedef struct Instruction_t {

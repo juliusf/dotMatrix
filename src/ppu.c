@@ -23,6 +23,7 @@ void initialize_ppu(PPU** ppu){
 	(*ppu)->cycles = 0;
 	(*ppu)->mode = MODE_OAM;
 	(*ppu)->frame_ready = 0;
+	(*ppu)->vblank_interrupt_requested = 0;
 
 	// Initialize framebuffer to white
 	memset((*ppu)->framebuffer, COLOR_WHITE, sizeof((*ppu)->framebuffer));
@@ -63,9 +64,10 @@ void ppu_step(PPU* ppu, uint32_t cycles){
 
 				if (ppu->ly >= VBLANK_START){
 					// Enter V-Blank
-					ppu->mode = MODE_VBLANK;
+												ppu->mode = MODE_VBLANK;
 					ppu->stat = (ppu->stat & ~STAT_MODE_MASK) | MODE_VBLANK;
 					ppu->frame_ready = 1;  // Frame is complete
+					ppu->vblank_interrupt_requested = 1;  // Request V-Blank interrupt
 				} else {
 					// Next scanline
 					ppu->mode = MODE_OAM;

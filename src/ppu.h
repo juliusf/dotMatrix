@@ -76,6 +76,7 @@ typedef struct PPU_t {
 	uint32_t cycles;       // Cycle counter for current scanline
 	uint8_t mode;          // Current PPU mode
 	int frame_ready;       // Flag: new frame is ready to display
+	int vblank_interrupt_requested;  // Flag: V-Blank interrupt requested
 } PPU;
 
 // PPU Functions

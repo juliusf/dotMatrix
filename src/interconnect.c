@@ -14,6 +14,18 @@ void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu){
 	(*interconnect)->cpu = *cpu;
 	(*interconnect)->inBios = TRUE;
 
+	// Initialize interrupt registers
+	(*interconnect)->interrupt_flag = 0x00;
+	(*interconnect)->interrupt_enable = 0x00;
+
+	// Initialize timer registers
+	(*interconnect)->div = 0x00;
+	(*interconnect)->tima = 0x00;
+	(*interconnect)->tma = 0x00;
+	(*interconnect)->tac = 0x00;
+	(*interconnect)->div_counter = 0;
+	(*interconnect)->timer_counter = 0;
+
 	// Initialize PPU
 	initialize_ppu(&((*interconnect)->ppu));
 }
@@ -42,6 +54,35 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 	// LCD Registers (0xFF40-0xFF4B)
 	if (addr >= 0xFF40 && addr <= 0xFF4B){
 		return ppu_read_register(interconnect->ppu, addr);
+	}
+
+	// Timer registers (0xFF04-0xFF07)
+	if (addr == 0xFF04) {
+		static uint8_t last_div_printed = 0;
+		if ((interconnect->div & 0xF0) != (last_div_printed & 0xF0)) {
+			fprintf(stderr, "DIV read: 0x%02x (PC=0x%04x)\n", interconnect->div, interconnect->cpu->reg_pc);
+			last_div_printed = interconnect->div;
+		}
+		return interconnect->div;
+	}
+	if (addr == 0xFF05) return interconnect->tima;
+	if (addr == 0xFF06) return interconnect->tma;
+	if (addr == 0xFF07) return interconnect->tac | 0xF8;  // Upper 5 bits always set
+
+	// Interrupt Flag (IF) - 0xFF0F
+	if (addr == 0xFF0F){
+		static uint32_t if_read_count = 0;
+		if_read_count++;
+		if (if_read_count % 100 == 0) {
+			fprintf(stderr, "IF read %u times (value=0x%02x, PC=0x%04x)\n",
+			        if_read_count, interconnect->interrupt_flag, interconnect->cpu->reg_pc);
+		}
+		return interconnect->interrupt_flag | 0xE0;  // Upper 3 bits always set
+	}
+
+	// Interrupt Enable (IE) - 0xFFFF
+	if (addr == 0xFFFF){
+		return interconnect->interrupt_enable;
 	}
 
 	return interconnect->ram[addr];
@@ -73,6 +114,47 @@ void write_to_ram(Interconnect* interconnect, uint16_t addr, uint8_t value)
 		return;
 	}
 
+	// Timer registers (0xFF04-0xFF07)
+	if (addr == 0xFF04) {
+		// Writing to DIV resets it to 0
+		interconnect->div = 0;
+		interconnect->div_counter = 0;
+		return;
+	}
+	if (addr == 0xFF05) {
+		interconnect->tima = value;
+		return;
+	}
+	if (addr == 0xFF06) {
+		interconnect->tma = value;
+		return;
+	}
+	if (addr == 0xFF07) {
+		uint8_t old_tac = interconnect->tac;
+		interconnect->tac = value & 0x07;  // Only lower 3 bits are writable
+		if (old_tac != interconnect->tac) {
+			const char* freq_names[] = {"4096Hz", "262144Hz", "65536Hz", "16384Hz"};
+			fprintf(stderr, "Timer configured: %s, enabled=%d, TIMA=0x%02x, TMA=0x%02x\n",
+			        freq_names[interconnect->tac & 0x03],
+			        (interconnect->tac & 0x04) ? 1 : 0,
+			        interconnect->tima,
+			        interconnect->tma);
+		}
+		return;
+	}
+
+	// Interrupt Flag (IF) - 0xFF0F
+	if (addr == 0xFF0F){
+		interconnect->interrupt_flag = value & 0x1F;  // Only lower 5 bits are writable
+		return;
+	}
+
+	// Interrupt Enable (IE) - 0xFFFF
+	if (addr == 0xFFFF){
+		interconnect->interrupt_enable = value;
+		return;
+	}
+
 	interconnect->ram[addr] = value;
 }
 
@@ -97,4 +179,43 @@ void load_cartridge_rom(Interconnect* interconnect, uint64_t romLen, unsigned ch
 
 	memcpy(interconnect->ram, rom, romLen);
 	debug_print("cartridge rom loaded to address 0x0000%s", "\n");
+}
+
+// Update timer registers - called with number of T-cycles elapsed
+void timer_step(Interconnect* interconnect, uint32_t cycles) {
+	// Update DIV register (increments at 16384 Hz = every 256 T-cycles)
+	interconnect->div_counter += cycles;
+	while (interconnect->div_counter >= 256) {
+		interconnect->div_counter -= 256;
+		interconnect->div++;
+	}
+
+	// Check if timer is enabled (bit 2 of TAC)
+	if (!(interconnect->tac & 0x04)) {
+		return;
+	}
+
+	// Determine timer frequency based on TAC bits 0-1
+	uint16_t timer_threshold;
+	switch (interconnect->tac & 0x03) {
+		case 0: timer_threshold = 1024; break;  // 4096 Hz
+		case 1: timer_threshold = 16;   break;  // 262144 Hz
+		case 2: timer_threshold = 64;   break;  // 65536 Hz
+		case 3: timer_threshold = 256;  break;  // 16384 Hz
+		default: timer_threshold = 1024; break;
+	}
+
+	// Update TIMA
+	interconnect->timer_counter += cycles;
+	while (interconnect->timer_counter >= timer_threshold) {
+		interconnect->timer_counter -= timer_threshold;
+		interconnect->tima++;
+
+		// Check for overflow
+		if (interconnect->tima == 0) {
+			// TIMA overflowed, reload from TMA and trigger interrupt
+			interconnect->tima = interconnect->tma;
+			interconnect->interrupt_flag |= INT_TIMER;
+		}
+	}
 }

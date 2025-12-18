@@ -132,10 +132,10 @@ int8_t opCode0x20(Cpu* cpu){ // JRNZ
 	int8_t addr_offset = get_one_byte_parameter(cpu);
 	if (! get_bit( &(cpu->reg_f), FLAG_BIT_Z)){
 		cpu->reg_pc += addr_offset + 2;
-		cpu->cycles_left = 12; // Branch taken
+		cpu->cycles_left = 3; // Branch taken: 12 T-cycles = 3 M-cycles
 		return PC_JMP;
 	}
-	cpu->cycles_left = 8; // Branch not taken
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
 	return PC_NO_JMP;
 }
 
@@ -173,10 +173,10 @@ int8_t opCode0x28(Cpu* cpu){ // JR Z, n
 
 	if (get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
 		cpu->reg_pc = cpu->reg_pc + 2 + offset;
-		cpu->cycles_left = 12; // Branch taken
+		cpu->cycles_left = 3; // Branch taken: 12 T-cycles = 3 M-cycles
 		return PC_JMP;
 	}
-	cpu->cycles_left = 8; // Branch not taken
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
 	return PC_NO_JMP;
 }
 
@@ -210,6 +210,14 @@ int8_t opCode0x31(Cpu* cpu){ // LD SP, $nn
 int8_t opCode0x32(Cpu* cpu){ // LDD (HL), A
 	write_to_ram(cpu->interconnect, cpu->reg_hl, cpu->reg_a);
 	cpu->reg_hl--;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x34(Cpu* cpu){ // INC (HL)
+	uint8_t value = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	value++;
+	cpu_inc_toggle_bits(cpu, &value);
+	write_to_ram(cpu->interconnect, cpu->reg_hl, value);
 	return PC_NO_JMP;
 }
 
@@ -269,6 +277,19 @@ int8_t opCode0x5f(Cpu* cpu){ // LD E, A
 
 int8_t opCode0x67(Cpu* cpu){ // LD H, A
 	cpu->reg_h = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x76(Cpu* cpu){ // HALT
+	static uint32_t halt_count = 0;
+	halt_count++;
+	if (halt_count == 1 || halt_count % 1000 == 0) {
+		fprintf(stderr, "HALT executed %u times (PC=0x%04x, IME=%d, IE=0x%02x, IF=0x%02x)\n",
+		        halt_count, cpu->reg_pc, cpu->ime,
+		        cpu->interconnect->interrupt_enable,
+		        cpu->interconnect->interrupt_flag);
+	}
+	cpu->halted = 1;
 	return PC_NO_JMP;
 }
 
@@ -389,6 +410,16 @@ int8_t opCode0xbe(Cpu* cpu){ // CP (HL)
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xc0(Cpu* cpu){ // RET NZ
+	if (!get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
+		pop_stack(cpu, &(cpu->reg_pc));
+		cpu->cycles_left = 5; // Branch taken: 20 T-cycles = 5 M-cycles
+		return PC_JMP;
+	}
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xc1(Cpu* cpu){ // POP BC
 	pop_stack(cpu, &(cpu->reg_bc));
 	return PC_NO_JMP;
@@ -404,10 +435,10 @@ int8_t opCode0xca(Cpu* cpu){ // JP Z, nn
 	uint16_t addr = get_two_byte_parameter(cpu);
 	if (get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
 		cpu->reg_pc = addr;
-		cpu->cycles_left = 16; // Branch taken
+		cpu->cycles_left = 4; // Branch taken: 16 T-cycles = 4 M-cycles
 		return PC_JMP;
 	}
-	cpu->cycles_left = 12; // Branch not taken
+	cpu->cycles_left = 3; // Branch not taken: 12 T-cycles = 3 M-cycles
 	return PC_NO_JMP;
 }
 
@@ -425,10 +456,10 @@ int8_t opCode0xc6(Cpu* cpu){ // ADD A, n
 int8_t opCode0xc8(Cpu* cpu){ // RET Z
 	if (get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
 		pop_stack(cpu, &(cpu->reg_pc));
-		cpu->cycles_left = 20; // Branch taken
+		cpu->cycles_left = 5; // Branch taken: 20 T-cycles = 5 M-cycles
 		return PC_JMP;
 	}
-	cpu->cycles_left = 8; // Branch not taken
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
 	return PC_NO_JMP;
 }
 
@@ -445,6 +476,12 @@ int8_t opCode0xd1(Cpu* cpu){ // POP DE
 int8_t opCode0xd5(Cpu* cpu){ // PUSH DE
 	push_stack(cpu, cpu->reg_de);
 	return PC_NO_JMP;
+}
+
+int8_t opCode0xd9(Cpu* cpu){ // RETI
+	pop_stack(cpu, &(cpu->reg_pc));
+	cpu->ime = 1;  // Re-enable interrupts immediately
+	return PC_JMP;
 }
 
 int8_t opCode0xe1(Cpu* cpu){ // POP HL
@@ -517,7 +554,7 @@ int8_t opCode0xf1(Cpu* cpu){ // POP AF
 }
 
 int8_t opCode0xf3(Cpu* cpu){ // DI (Disable Interrupts)
-	// TODO: Implement interrupt disable when interrupt system is added
+	cpu->ime = 0;
 	return PC_NO_JMP;
 }
 
@@ -533,7 +570,8 @@ int8_t opCode0xfa(Cpu* cpu){ // LD A, (nn)
 }
 
 int8_t opCode0xfb(Cpu* cpu){ // EI (Enable Interrupts)
-	// TODO: Implement interrupt enable when interrupt system is added
+	// EI enables interrupts after the NEXT instruction executes
+	cpu->ime_scheduled = 1;
 	return PC_NO_JMP;
 }
 
