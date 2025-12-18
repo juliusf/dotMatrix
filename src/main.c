@@ -50,7 +50,7 @@ int main(int argc, const char* argv[]){
 #endif
 
     Video* video = NULL;
-    initialize_video(&video);
+    initialize_video(&video, interconnect->ppu);
 
     fprintf(stderr, "Starting CPU thread...\n");
     pthread_t cpu_thread = start_cpu_thread(cpu);

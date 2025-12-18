@@ -4,12 +4,13 @@
 #define BIOS_SIZE 256
 
 #include <stdint.h>
-
+#include "ppu.h"
 
 typedef struct Interconnect_t{
 	uint8_t ram[RAM_SIZE];
 	uint8_t bios[BIOS_SIZE];
 	struct Cpu_t* cpu;
+	struct PPU_t* ppu;
 	uint8_t inBios;
 } Interconnect;
 

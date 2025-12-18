@@ -215,6 +215,36 @@ static inline void opcodes_add(Cpu* cpu, uint8_t value){
 	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
 }
 
+static inline void opcodes_sub(Cpu* cpu, uint8_t value){
+	// SUB: Z if result is 0, N=1, H if borrow from bit 4, C if borrow occurred (A < value)
+
+	// Set N flag (SUB always sets N)
+	set_bit(&(cpu->reg_f), FLAG_BIT_N);
+
+	// Set C flag if borrow occurred (A < value)
+	if (cpu->reg_a < value) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	// Set H flag if borrow from bit 4
+	if ((cpu->reg_a & 0x0F) < (value & 0x0F)) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	}
+
+	cpu->reg_a -= value;
+
+	// Set Z flag if result is 0
+	if (cpu->reg_a == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+}
+
 static inline void opcodes_add_hl(Cpu* cpu, uint16_t value){
 	// ADD HL, reg16: N=0, H if carry from bit 11, C if carry from bit 15, Z unchanged
 	uint32_t result = cpu->reg_hl + value;
