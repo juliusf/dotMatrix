@@ -152,6 +152,7 @@ void initialize_opcodes(void){
 		instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, 0, NULL};
 		cb_instructions[i] = (Instruction){"NOT IMPLEMENTED", 0, 0, NULL};
 	}
+	instructions[0x04] = (Instruction){"INC B", 0, 4, opCode0x04};
 	instructions[0x05] = (Instruction){"DEC B", 0, 4, opCode0x05};
 	instructions[0x06] = (Instruction){"LD B, 0x%x", 1, 8, opCode0x06};
 	instructions[0x08] = (Instruction){"LD $%x, SP", 2, 20, opCode0x08};
@@ -180,6 +181,8 @@ void initialize_opcodes(void){
 
 	instructions[0x4f] = (Instruction){"LD C,A", 0, 4, opCode0x4f};
 
+	instructions[0x57] = (Instruction){"LD D,A", 0, 4, opCode0x57};
+	instructions[0x67] = (Instruction){"LD H,A", 0, 4, opCode0x67};
 	instructions[0x77] = (Instruction){"LD (HL), A", 0, 8, opCode0x77};
 	instructions[0x78] = (Instruction){"LD A,B", 0, 4, opCode0x78};
 	instructions[0x7b] = (Instruction){"LD A,E", 0, 4, opCode0x7b};

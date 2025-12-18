@@ -1,4 +1,11 @@
 
+int8_t opCode0x04(Cpu* cpu){ // INC B
+	cpu->reg_b++;
+	cpu_inc_toggle_bits(cpu, &(cpu->reg_b));
+
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x05(Cpu* cpu){ // DEC B
 	cpu->reg_b--;
 	cpu_dec_toggle_bits(cpu, &(cpu->reg_b));
@@ -145,8 +152,18 @@ int8_t opCode0x3e(Cpu* cpu){ // LD A,n
 	return PC_NO_JMP;
 }
 
-int8_t opCode0x4f(Cpu* cpu){ //
+int8_t opCode0x4f(Cpu* cpu){ // LD C, A
 	cpu->reg_c = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x57(Cpu* cpu){ // LD D, A
+	cpu->reg_d = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x67(Cpu* cpu){ // LD H, A
+	cpu->reg_h = cpu->reg_a;
 	return PC_NO_JMP;
 }
 
