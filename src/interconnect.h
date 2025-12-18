@@ -16,6 +16,7 @@ typedef struct Interconnect_t{
 
 void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu);
 void load_dmg_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* rom);
+void load_cartridge_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* rom);
 
 uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr);
 uint16_t read_addr_from_ram(Interconnect* interconnect, uint16_t addr);

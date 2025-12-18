@@ -18,9 +18,16 @@ int8_t opCode0x08(Cpu* cpu){ // LD (nn), SP
 	return PC_NO_JMP;
 }
 
-int8_t opCode0x0c(Cpu* cpu){
+int8_t opCode0x0c(Cpu* cpu){ // INC C
 	cpu->reg_c++;
 	cpu_inc_toggle_bits(cpu, &(cpu->reg_c));
+
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x0d(Cpu* cpu){ // DEC C
+	cpu->reg_c--;
+	cpu_dec_toggle_bits(cpu, &(cpu->reg_c));
 
 	return PC_NO_JMP;
 }
@@ -55,6 +62,17 @@ int8_t opCode0x13(Cpu* cpu){ // INC DE
 
 int8_t opCode0x17(Cpu* cpu){ // RLA
 	opcodes_rl(cpu, &(cpu->reg_a));
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x18(Cpu* cpu){ // JR n
+	int8_t addr_offset = get_one_byte_parameter(cpu);
+	cpu->reg_pc += addr_offset + 2;
+	return PC_JMP;
+}
+
+int8_t opCode0x19(Cpu* cpu){ // ADD HL, DE
+	opcodes_add_hl(cpu, cpu->reg_de);
 	return PC_NO_JMP;
 }
 
@@ -237,6 +255,11 @@ int8_t opCode0xc6(Cpu* cpu){ // ADD A, n
 int8_t opCode0xc9(Cpu* cpu){ // RET
 	pop_stack(cpu, &(cpu->reg_pc));
 	return PC_JMP;
+}
+
+int8_t opCode0xd1(Cpu* cpu){ // POP DE
+	pop_stack(cpu, &(cpu->reg_de));
+	return PC_NO_JMP;
 }
 
 int8_t opCode0xcd(Cpu* cpu){ // CALL n

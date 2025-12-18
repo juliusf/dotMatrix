@@ -125,11 +125,14 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 	{
 		jmp_occured = instruction_set[opcode].execute(cpu);
 	}else{
+		#ifdef DEBUG
+		print_instruction_buffer();
+		#endif
 		if (instruction_set == cb_instructions){
-			printf("0x%x: CB prefixed instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
+			fprintf(stderr, "0x%x: CB prefixed instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
 		}else
 		{
-			printf("0x%x: Instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
+			fprintf(stderr, "0x%x: Instruction 0x%x not implemented!\n", cpu->reg_pc, opcode);
 		}
 		exit(-1);
 	}
@@ -153,11 +156,14 @@ void initialize_opcodes(void){
 	instructions[0x06] = (Instruction){"LD B, 0x%x", 1, 8, opCode0x06};
 	instructions[0x08] = (Instruction){"LD $%x, SP", 2, 20, opCode0x08};
 	instructions[0x0c] = (Instruction){"INC C", 0, 4, opCode0x0c};
+	instructions[0x0d] = (Instruction){"DEC C", 0, 4, opCode0x0d};
 	instructions[0x0e] = (Instruction){"LD C, 0x%x", 1, 8, opCode0x0e};
 	
 	instructions[0x11] = (Instruction){"LD DE, $%x", 2, 12, opCode0x11};
 	instructions[0x13] = (Instruction){"INC DE", 0, 8, opCode0x13};
 	instructions[0x17] = (Instruction){"RLA", 0, 4, opCode0x17};
+	instructions[0x18] = (Instruction){"JR 0x%x", 1, 12, opCode0x18};
+	instructions[0x19] = (Instruction){"ADD HL, DE", 0, 8, opCode0x19};
 	instructions[0x1a] = (Instruction){"LD A, (DE)", 0, 8, opCode0x1a};
 	instructions[0x1e] = (Instruction){"LD E, 0x%x", 1, 8, opCode0x1e};
 
@@ -197,6 +203,8 @@ void initialize_opcodes(void){
 	instructions[0xc6] = (Instruction){"ADD A,0x%x", 1, 8, opCode0xc6};
 	instructions[0xc9] = (Instruction){"RET", 0, 8, opCode0xc9};
 	instructions[0xcd] = (Instruction){"CALL $%x", 2, 12, opCode0xcd};
+
+	instructions[0xd1] = (Instruction){"POP DE", 0, 12, opCode0xd1};
 
 	instructions[0xe0] = (Instruction){"LDH 0x%x, A", 1, 12, opCode0xe0};
 	instructions[0xe2] = (Instruction){"LD (C),A", 0, 8, opCode0xe2};

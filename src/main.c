@@ -37,6 +37,9 @@ int main(int argc, const char* argv[]){
     Cpu* cpu = NULL;
     initialize_interconnect(&interconnect, &cpu);
 
+    load_cartridge_rom(interconnect, romFileLen, rom);
+    free(rom);
+
     load_dmg_rom(interconnect, dmgRomFileLen, dmgRom);
     free(dmgRom);
 

@@ -215,4 +215,30 @@ static inline void opcodes_add(Cpu* cpu, uint8_t value){
 	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
 }
 
+static inline void opcodes_add_hl(Cpu* cpu, uint16_t value){
+	// ADD HL, reg16: N=0, H if carry from bit 11, C if carry from bit 15, Z unchanged
+	uint32_t result = cpu->reg_hl + value;
+
+	// Set H flag if carry from bit 11 (half carry for 16-bit)
+	if (((cpu->reg_hl & 0x0FFF) + (value & 0x0FFF)) > 0x0FFF) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	}
+
+	// Set C flag if carry from bit 15 (result > 0xFFFF)
+	if (result > 0xFFFF) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	cpu->reg_hl = (uint16_t)result;
+
+	// Clear N flag (ADD always clears N)
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+
+	// Z flag is unchanged (don't touch it)
+}
+
 #endif /*CPU_INLINE_H*/

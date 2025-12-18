@@ -49,3 +49,15 @@ void load_dmg_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* ro
 	assert(romLen == 256);
 	memcpy(interconnect->bios, rom, romLen);
 }
+
+void load_cartridge_rom(Interconnect* interconnect, uint64_t romLen, unsigned char* rom){
+	debug_print("loading cartridge rom, size: %llu bytes%s", romLen, "\n");
+
+	if (romLen > RAM_SIZE){
+		fprintf(stderr, "Warning: ROM size (%llu bytes) exceeds addressable memory (%d bytes). Truncating.\n", romLen, RAM_SIZE);
+		romLen = RAM_SIZE;
+	}
+
+	memcpy(interconnect->ram, rom, romLen);
+	debug_print("cartridge rom loaded to address 0x0000%s", "\n");
+}

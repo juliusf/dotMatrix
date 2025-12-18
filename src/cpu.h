@@ -11,7 +11,7 @@
 #define PC_NO_JMP 0
 #define PC_JMP 1
 
-#define INSTRUCTION_BUFFER_SIZE 50
+#define INSTRUCTION_BUFFER_SIZE 25
 
 #include <stdint.h>
 #include <stddef.h>
