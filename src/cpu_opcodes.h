@@ -77,6 +77,12 @@ int8_t opCode0x1a(Cpu* cpu){ // LD A, (DE)
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x1c(Cpu* cpu){ // INC E
+	cpu->reg_e++;
+	cpu_inc_toggle_bits(cpu, &(cpu->reg_e));
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x1d(Cpu* cpu){ // DEC E
 	cpu->reg_e--;
 	cpu_dec_toggle_bits(cpu, &(cpu->reg_e));
@@ -123,12 +129,14 @@ int8_t opCode0x19(Cpu* cpu){ // ADD HL, DE
 }
 
 int8_t opCode0x20(Cpu* cpu){ // JRNZ
-	int8_t addr_offset = get_one_byte_parameter(cpu); 
+	int8_t addr_offset = get_one_byte_parameter(cpu);
 	if (! get_bit( &(cpu->reg_f), FLAG_BIT_Z)){
 		cpu->reg_pc += addr_offset + 2;
+		cpu->cycles_left = 12; // Branch taken
 		return PC_JMP;
 	}
-	return PC_NO_JMP;	
+	cpu->cycles_left = 8; // Branch not taken
+	return PC_NO_JMP;
 }
 
 int8_t opCode0x21(Cpu* cpu){ // LD HL, $nn
@@ -165,8 +173,10 @@ int8_t opCode0x28(Cpu* cpu){ // JR Z, n
 
 	if (get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
 		cpu->reg_pc = cpu->reg_pc + 2 + offset;
+		cpu->cycles_left = 12; // Branch taken
 		return PC_JMP;
 	}
+	cpu->cycles_left = 8; // Branch not taken
 	return PC_NO_JMP;
 }
 
@@ -292,6 +302,11 @@ int8_t opCode0x7d(Cpu* cpu){ // LD A, L
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x7e(Cpu* cpu){ // LD A, (HL)
+	cpu->reg_a = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x80(Cpu* cpu){ // ADD A, B
 	opcodes_add(cpu, cpu->reg_b);
 	return PC_NO_JMP;
@@ -343,6 +358,11 @@ int8_t opCode0xa1(Cpu* cpu){ // AND C
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xa7(Cpu* cpu){ // AND A
+	opcodes_and(cpu, cpu->reg_a);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xa9(Cpu* cpu){ // XOR C
 	opcodes_xor(cpu, cpu->reg_c);
 	return PC_NO_JMP;
@@ -380,6 +400,17 @@ int8_t opCode0xc3(Cpu* cpu){ // JP nn
 	return PC_JMP;
 }
 
+int8_t opCode0xca(Cpu* cpu){ // JP Z, nn
+	uint16_t addr = get_two_byte_parameter(cpu);
+	if (get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
+		cpu->reg_pc = addr;
+		cpu->cycles_left = 16; // Branch taken
+		return PC_JMP;
+	}
+	cpu->cycles_left = 12; // Branch not taken
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xc5(Cpu* cpu){ // PUSH BC
 	push_stack(cpu, cpu->reg_bc);
 	return PC_NO_JMP;
@@ -388,6 +419,16 @@ int8_t opCode0xc5(Cpu* cpu){ // PUSH BC
 int8_t opCode0xc6(Cpu* cpu){ // ADD A, n
 	uint8_t value = get_one_byte_parameter(cpu);
 	opcodes_add(cpu, value);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xc8(Cpu* cpu){ // RET Z
+	if (get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
+		pop_stack(cpu, &(cpu->reg_pc));
+		cpu->cycles_left = 20; // Branch taken
+		return PC_JMP;
+	}
+	cpu->cycles_left = 8; // Branch not taken
 	return PC_NO_JMP;
 }
 
@@ -468,8 +509,26 @@ int8_t opCode0xf0(Cpu* cpu){ // LDH A, (n)
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xf1(Cpu* cpu){ // POP AF
+	pop_stack(cpu, &(cpu->reg_af));
+	// Lower 4 bits of F register are always 0 on Game Boy
+	cpu->reg_f &= 0xF0;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xf3(Cpu* cpu){ // DI (Disable Interrupts)
 	// TODO: Implement interrupt disable when interrupt system is added
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xf5(Cpu* cpu){ // PUSH AF
+	push_stack(cpu, cpu->reg_af);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xfa(Cpu* cpu){ // LD A, (nn)
+	uint16_t addr = get_two_byte_parameter(cpu);
+	cpu->reg_a = read_from_ram(cpu->interconnect, addr);
 	return PC_NO_JMP;
 }
 

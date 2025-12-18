@@ -131,7 +131,7 @@ static inline void opcodes_cp(Cpu* cpu, uint8_t number){
 	}
 
 	// Set H flag if borrow from bit 4
-	if ( ((cpu->reg_a - number) & 0xf) > (cpu->reg_a & 0xF)){
+	if ((cpu->reg_a & 0x0F) < (number & 0x0F)){
 		set_bit(&(cpu->reg_f), FLAG_BIT_H);
 	} else {
 		clear_bit(&(cpu->reg_f), FLAG_BIT_H);

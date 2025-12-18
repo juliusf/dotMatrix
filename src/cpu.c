@@ -158,8 +158,11 @@ void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opc
 		}
 		exit(-1);
 	}
-	
-	cpu->cycles_left = instruction_set[opcode].cycles;
+
+	// Set cycles - use default value unless execute function set it explicitly
+	if (cpu->cycles_left == 0) {
+		cpu->cycles_left = instruction_set[opcode].cycles;
+	}
 
 	if (! jmp_occured)
 		cpu->reg_pc+= instruction_set[opcode].parLength +1;
@@ -194,6 +197,7 @@ void initialize_opcodes(void){
 	instructions[0x18] = (Instruction){"JR 0x%x", 1, 12, opCode0x18};
 	instructions[0x19] = (Instruction){"ADD HL, DE", 0, 8, opCode0x19};
 	instructions[0x1a] = (Instruction){"LD A, (DE)", 0, 8, opCode0x1a};
+	instructions[0x1c] = (Instruction){"INC E", 0, 4, opCode0x1c};
 	instructions[0x1d] = (Instruction){"DEC E", 0, 4, opCode0x1d};
 	instructions[0x1e] = (Instruction){"LD E, 0x%x", 1, 8, opCode0x1e};
 
@@ -228,6 +232,7 @@ void initialize_opcodes(void){
 	instructions[0x7b] = (Instruction){"LD A,E", 0, 4, opCode0x7b};
 	instructions[0x7c] = (Instruction){"LD A,H", 0, 4, opCode0x7c};
 	instructions[0x7d] = (Instruction){"LD A,L", 0, 4, opCode0x7d};
+	instructions[0x7e] = (Instruction){"LD A,(HL)", 0, 8, opCode0x7e};
 
 	instructions[0x80] = (Instruction){"ADD A,B", 0, 4, opCode0x80};
 	instructions[0x81] = (Instruction){"ADD A,C", 0, 4, opCode0x81};
@@ -241,6 +246,7 @@ void initialize_opcodes(void){
 	instructions[0x90] = (Instruction){"SUB B", 0, 4, opCode0x90};
 
 	instructions[0xa1] = (Instruction){"AND C", 0, 4, opCode0xa1};
+	instructions[0xa7] = (Instruction){"AND A", 0, 4, opCode0xa7};
 	instructions[0xa9] = (Instruction){"XOR C", 0, 4, opCode0xa9};
 	instructions[0xaf] = (Instruction){"XOR A, A", 0, 4, opCode0xaf};
 	instructions[0xb0] = (Instruction){"OR B", 0, 4, opCode0xb0};
@@ -251,7 +257,9 @@ void initialize_opcodes(void){
 	instructions[0xc1] = (Instruction){"POP BC", 0, 12, opCode0xc1};
 	instructions[0xc3] = (Instruction){"JP $%x", 2, 16, opCode0xc3};
 	instructions[0xc5] = (Instruction){"PUSH BC", 0, 16, opCode0xc5};
+	instructions[0xca] = (Instruction){"JP Z, $%x", 2, 12, opCode0xca};
 	instructions[0xc6] = (Instruction){"ADD A,0x%x", 1, 8, opCode0xc6};
+	instructions[0xc8] = (Instruction){"RET Z", 0, 8, opCode0xc8};
 	instructions[0xc9] = (Instruction){"RET", 0, 8, opCode0xc9};
 	instructions[0xcd] = (Instruction){"CALL $%x", 2, 12, opCode0xcd};
 
@@ -268,12 +276,15 @@ void initialize_opcodes(void){
 	instructions[0xef] = (Instruction){"RST 28", 0, 16, opCode0xef};
 
 	instructions[0xf0] = (Instruction){"LDH A, 0x%x", 1, 12, opCode0xf0};
+	instructions[0xf1] = (Instruction){"POP AF", 0, 12, opCode0xf1};
 	instructions[0xf3] = (Instruction){"DI", 0, 4, opCode0xf3};
+	instructions[0xf5] = (Instruction){"PUSH AF", 0, 16, opCode0xf5};
+	instructions[0xfa] = (Instruction){"LD A, $%x", 2, 16, opCode0xfa};
 	instructions[0xfb] = (Instruction){"EI", 0, 4, opCode0xfb};
 
 	instructions[0x2f] = (Instruction){"CPL", 0, 4, opCode0x2f};
-	instructions[0xff] = (Instruction){"RST 38", 0, 32, opCode0xff};
-	instructions[0xfe] = (Instruction){"CP SP", 1, 8, opCode0xfe};
+	instructions[0xff] = (Instruction){"RST 38", 0, 16, opCode0xff};
+	instructions[0xfe] = (Instruction){"CP 0x%x", 1, 8, opCode0xfe};
 
 	//--------------------------------------------------------------------
 
