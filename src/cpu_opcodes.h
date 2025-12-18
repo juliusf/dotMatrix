@@ -42,6 +42,12 @@ int8_t opCode0x1a(Cpu* cpu){ // LD A, (DE)
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x1e(Cpu* cpu){ // LD E, n
+	uint8_t value = get_one_byte_parameter(cpu);
+	cpu->reg_e = value;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x13(Cpu* cpu){ // INC DE
 	cpu->reg_de++;
 	return PC_NO_JMP;
@@ -192,15 +198,16 @@ int8_t opCode0xaf(Cpu* cpu){// XOR A, A
 
 	cpu->reg_a = result;
 
-	if (! result){
+	// Set Z flag if result is 0, clear otherwise
+	if (result == 0){
 		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
 	}
 
 	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
 	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
 	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
-
-
 
 	return PC_NO_JMP;
 }
@@ -265,6 +272,13 @@ int8_t opCode0xea(Cpu* cpu){ // LD (nn), A
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xf0(Cpu* cpu){ // LDH A, (n)
+	uint8_t offset = get_one_byte_parameter(cpu);
+	uint16_t addr = 0xFF00 + offset;
+	cpu->reg_a = read_from_ram(cpu->interconnect, addr);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xfe(Cpu* cpu){ // CP n
 	uint8_t value = get_one_byte_parameter(cpu);
 	opcodes_cp(cpu, value);
@@ -272,7 +286,7 @@ int8_t opCode0xfe(Cpu* cpu){ // CP n
 }
 
 int8_t opCode0xff(Cpu* cpu){ // RST 38
-	push_stack(cpu, cpu->reg_pc);
+	push_stack(cpu, cpu->reg_pc + 1);
 	cpu->reg_pc = 0x0038;
 	return PC_JMP;
 }

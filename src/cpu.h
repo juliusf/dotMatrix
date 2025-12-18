@@ -11,8 +11,16 @@
 #define PC_NO_JMP 0
 #define PC_JMP 1
 
+#define INSTRUCTION_BUFFER_SIZE 50
+
 #include <stdint.h>
 #include <stddef.h>
+
+typedef struct InstructionTrace_t {
+	char text[256];
+	uint64_t instruction_count;
+	uint16_t pc;
+} InstructionTrace;
 
 
 typedef struct Cpu_t{
@@ -69,6 +77,11 @@ typedef struct Instruction_t {
 void initialize_cpu(Cpu** cpu, struct Interconnect_t* interconnect);
 
 void run(Cpu* cpu);
+
+#ifdef DEBUG
+void add_instruction_to_buffer(uint64_t instruction_count, uint16_t pc, const char* text);
+void print_instruction_buffer(void);
+#endif
 
 static Instruction instructions[256];
 static Instruction cb_instructions[256];

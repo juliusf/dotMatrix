@@ -13,6 +13,39 @@ void initialize_opcodes(void);
 void run_instruction(Cpu* cpu);
 void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opcode);
 
+#ifdef DEBUG
+static InstructionTrace instruction_buffer[INSTRUCTION_BUFFER_SIZE];
+static int buffer_index = 0;
+static int buffer_filled = 0;
+
+void add_instruction_to_buffer(uint64_t instruction_count, uint16_t pc, const char* text){
+	instruction_buffer[buffer_index].instruction_count = instruction_count;
+	instruction_buffer[buffer_index].pc = pc;
+	strncpy(instruction_buffer[buffer_index].text, text, sizeof(instruction_buffer[buffer_index].text) - 1);
+	instruction_buffer[buffer_index].text[sizeof(instruction_buffer[buffer_index].text) - 1] = '\0';
+
+	buffer_index = (buffer_index + 1) % INSTRUCTION_BUFFER_SIZE;
+	if (!buffer_filled && buffer_index == 0) {
+		buffer_filled = 1;
+	}
+}
+
+void print_instruction_buffer(void){
+	int count = buffer_filled ? INSTRUCTION_BUFFER_SIZE : buffer_index;
+	int start = buffer_filled ? buffer_index : 0;
+
+	fprintf(stderr, "\n=== Last %d executed instructions ===\n", count);
+	for (int i = 0; i < count; i++){
+		int idx = (start + i) % INSTRUCTION_BUFFER_SIZE;
+		fprintf(stderr, "%" PRIu64 "| 0x%x: %s\n",
+			instruction_buffer[idx].instruction_count,
+			instruction_buffer[idx].pc,
+			instruction_buffer[idx].text);
+	}
+	fprintf(stderr, "=====================================\n");
+}
+#endif
+
 void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 
 	*cpu = (Cpu*) malloc(sizeof(Cpu));
@@ -57,36 +90,34 @@ void run_instruction(Cpu* cpu){
 }
 
 void run_instruction_set(Cpu* cpu, Instruction instruction_set[256], uint8_t opcode){
-	
 
-	
+
+
 	#ifdef DEBUG
-    printf("%" PRIu64 "| ", cpu->instruction_count);
+    char instruction_text[256];
     switch(instruction_set[opcode].parLength){
 
     	case 0:{
-    		printf("0x%x: %s \n", cpu->reg_pc, instruction_set[opcode].disassembly);
+    		snprintf(instruction_text, sizeof(instruction_text), "%s", instruction_set[opcode].disassembly);
     	}
     	break;
     	case 1:{
     		uint8_t value = get_one_byte_parameter(cpu);
-    		printf("0x%x: ", cpu->reg_pc);
-	    	printf( (instruction_set[opcode].disassembly), value);
-	    	printf( "\n");
+	    	snprintf(instruction_text, sizeof(instruction_text), instruction_set[opcode].disassembly, value);
     	}
     	break;
     	case 2:{
 	    	uint16_t value = get_two_byte_parameter(cpu);
-	    	printf("0x%x: ", cpu->reg_pc);
-	    	printf( (instruction_set[opcode].disassembly), value);
-	    	printf( "\n");
+	    	snprintf(instruction_text, sizeof(instruction_text), instruction_set[opcode].disassembly, value);
     	}
     	break;
     	default:
-    		printf("Unsupported debug number of parameters!\n");
+    		fprintf(stderr, "Unsupported debug number of parameters!\n");
     		exit(-1);
     };
-     
+
+    add_instruction_to_buffer(cpu->instruction_count, cpu->reg_pc, instruction_text);
+
     #endif /* DEBUG */
 	
 	int8_t jmp_occured = 0;
@@ -128,6 +159,7 @@ void initialize_opcodes(void){
 	instructions[0x13] = (Instruction){"INC DE", 0, 8, opCode0x13};
 	instructions[0x17] = (Instruction){"RLA", 0, 4, opCode0x17};
 	instructions[0x1a] = (Instruction){"LD A, (DE)", 0, 8, opCode0x1a};
+	instructions[0x1e] = (Instruction){"LD E, 0x%x", 1, 8, opCode0x1e};
 
 	instructions[0x20] = (Instruction){"JRNZ, 0x%x", 1, 8, opCode0x20};
 	instructions[0x21] = (Instruction){"LD HL, $%x", 2, 12, opCode0x21};
@@ -170,6 +202,8 @@ void initialize_opcodes(void){
 	instructions[0xe2] = (Instruction){"LD (C),A", 0, 8, opCode0xe2};
 	instructions[0xe5] = (Instruction){"PUSH HL", 0, 16, opCode0xe5};
 	instructions[0xea] = (Instruction){"LD $%x, A", 2, 16, opCode0xea};
+
+	instructions[0xf0] = (Instruction){"LDH A, 0x%x", 1, 12, opCode0xf0};
 
 	instructions[0x2f] = (Instruction){"CPL", 0, 4, opCode0x2f};
 	instructions[0xff] = (Instruction){"RST 38", 0, 32, opCode0xff};

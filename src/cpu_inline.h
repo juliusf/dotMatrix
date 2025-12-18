@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 static inline uint16_t get_two_byte_parameter(Cpu* cpu){
-	uint8_t addr = cpu->reg_pc + 1;
+	uint16_t addr = cpu->reg_pc + 1;
 	return read_addr_from_ram(cpu->interconnect, addr);
 }
 
@@ -94,33 +94,47 @@ static inline uint8_t opcodes_rl_rotate(Cpu* cpu, uint8_t* reg){
 
 static inline void opcodes_rl(Cpu* cpu, uint8_t* reg){
 	uint8_t result = opcodes_rl_rotate(cpu, reg);
-	// Set Z flag if result is 0 (but NOT for RLA - only for CB prefixed RL)
-	// Note: For RLA (0x17), Z flag should NOT be affected
-	// For CB RL r, Z flag should be set if result is 0
-	if (reg != &(cpu->reg_a)){
-		// CB prefixed RL - set Z flag
+	// Z flag handling differs between RLA and CB RL
+	// RLA (0x17): Z=0 (always cleared)
+	// CB RL r: Z=1 if result is 0, else Z=0
+	if (reg == &(cpu->reg_a)){
+		// RLA - always clear Z flag
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		// CB prefixed RL - set Z flag based on result
 		if (result == 0) {
 			set_bit(&(cpu->reg_f), FLAG_BIT_Z);
 		} else {
 			clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
 		}
 	}
-	// For RLA (reg == A), don't touch Z flag
 }
 
 static inline void opcodes_cp(Cpu* cpu, uint8_t number){
+	// CP: Compare A with number (A - number)
+	// Z=1 if A==number, N=1, H=1 if borrow from bit 4, C=1 if A<number
+
 	set_bit(&(cpu->reg_f), FLAG_BIT_N);
 
-	if (cpu->reg_a < number){
-		toggle_flag(cpu, FLAG_BIT_C);
-	}
-
+	// Set Z flag if A == number
 	if (cpu->reg_a == number){
-		toggle_flag(cpu, FLAG_BIT_Z);
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
 	}
 
+	// Set C flag if A < number (borrow occurred)
+	if (cpu->reg_a < number){
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	// Set H flag if borrow from bit 4
 	if ( ((cpu->reg_a - number) & 0xf) > (cpu->reg_a & 0xF)){
-		toggle_flag(cpu, FLAG_BIT_H);
+		set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_H);
 	}
 }
 

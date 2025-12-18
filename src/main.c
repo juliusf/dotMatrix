@@ -3,9 +3,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include "util.h"
 #include "cpu.h"
 #include "interconnect.h"
+
+#ifdef DEBUG
+void sigterm_handler(int signum){
+	fprintf(stderr, "\nReceived signal %d (SIGTERM), printing last instructions...\n", signum);
+	print_instruction_buffer();
+	exit(0);
+}
+#endif
 
 int main(int argc, const char* argv[]){
     if(argc != 2) {
@@ -30,6 +39,11 @@ int main(int argc, const char* argv[]){
 
     load_dmg_rom(interconnect, dmgRomFileLen, dmgRom);
     free(dmgRom);
+
+#ifdef DEBUG
+    signal(SIGTERM, sigterm_handler);
+    signal(SIGINT, sigterm_handler);
+#endif
 
     run(cpu);
 
