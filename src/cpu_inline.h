@@ -245,6 +245,75 @@ static inline void opcodes_sub(Cpu* cpu, uint8_t value){
 	}
 }
 
+static inline void opcodes_or(Cpu* cpu, uint8_t value){
+	// OR: Z if result is 0, N=0, H=0, C=0
+	cpu->reg_a |= value;
+
+	// Set Z flag if result is 0
+	if (cpu->reg_a == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N, H, C flags
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+}
+
+static inline void opcodes_and(Cpu* cpu, uint8_t value){
+	// AND: Z if result is 0, N=0, H=1, C=0
+	cpu->reg_a &= value;
+
+	// Set Z flag if result is 0
+	if (cpu->reg_a == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N and C flags, set H flag
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+}
+
+static inline void opcodes_swap(Cpu* cpu, uint8_t* reg){
+	// SWAP: Z if result is 0, N=0, H=0, C=0
+	// Swap upper and lower nibbles
+	*reg = ((*reg & 0x0F) << 4) | ((*reg & 0xF0) >> 4);
+
+	// Set Z flag if result is 0
+	if (*reg == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N, H, C flags
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+}
+
+static inline void opcodes_xor(Cpu* cpu, uint8_t value){
+	// XOR: Z if result is 0, N=0, H=0, C=0
+	cpu->reg_a ^= value;
+
+	// Set Z flag if result is 0
+	if (cpu->reg_a == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N, H, C flags
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+}
+
 static inline void opcodes_add_hl(Cpu* cpu, uint16_t value){
 	// ADD HL, reg16: N=0, H if carry from bit 11, C if carry from bit 15, Z unchanged
 	uint32_t result = cpu->reg_hl + value;

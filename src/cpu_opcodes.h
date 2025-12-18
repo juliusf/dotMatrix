@@ -4,6 +4,12 @@ int8_t opCode0x00(Cpu* cpu){ // NOP
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x01(Cpu* cpu){ // LD BC, nn
+	uint16_t value = get_two_byte_parameter(cpu);
+	cpu->reg_bc = value;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x04(Cpu* cpu){ // INC B
 	cpu->reg_b++;
 	cpu_inc_toggle_bits(cpu, &(cpu->reg_b));
@@ -30,6 +36,11 @@ int8_t opCode0x08(Cpu* cpu){ // LD (nn), SP
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x0b(Cpu* cpu){ // DEC BC
+	cpu->reg_bc--;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x0c(Cpu* cpu){ // INC C
 	cpu->reg_c++;
 	cpu_inc_toggle_bits(cpu, &(cpu->reg_c));
@@ -53,6 +64,11 @@ int8_t opCode0x0e(Cpu* cpu){ // LD C, n
 int8_t opCode0x11(Cpu* cpu){ //LD, DE, n
 	uint16_t value = get_two_byte_parameter(cpu);
 	cpu->reg_de = value;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x12(Cpu* cpu){ // LD (DE), A
+	write_to_ram(cpu->interconnect, cpu->reg_de, cpu->reg_a);
 	return PC_NO_JMP;
 }
 
@@ -154,6 +170,12 @@ int8_t opCode0x28(Cpu* cpu){ // JR Z, n
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x2a(Cpu* cpu){ // LDI A, (HL)
+	cpu->reg_a = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	cpu->reg_hl++;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x2c(Cpu* cpu){ // INC L
 	cpu->reg_l++;
 	cpu_inc_toggle_bits(cpu, &(cpu->reg_l));
@@ -181,6 +203,12 @@ int8_t opCode0x32(Cpu* cpu){ // LDD (HL), A
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x36(Cpu* cpu){ // LD (HL), n
+	uint8_t value = get_one_byte_parameter(cpu);
+	write_to_ram(cpu->interconnect, cpu->reg_hl, value);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x3c(Cpu* cpu){ // INC A
 	cpu->reg_a++;
 	cpu_inc_toggle_bits(cpu, &(cpu->reg_a));
@@ -199,13 +227,33 @@ int8_t opCode0x3e(Cpu* cpu){ // LD A,n
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x47(Cpu* cpu){ // LD B, A
+	cpu->reg_b = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x4f(Cpu* cpu){ // LD C, A
 	cpu->reg_c = cpu->reg_a;
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x56(Cpu* cpu){ // LD D, (HL)
+	cpu->reg_d = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x57(Cpu* cpu){ // LD D, A
 	cpu->reg_d = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x5e(Cpu* cpu){ // LD E, (HL)
+	cpu->reg_e = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x5f(Cpu* cpu){ // LD E, A
+	cpu->reg_e = cpu->reg_a;
 	return PC_NO_JMP;
 }
 
@@ -221,6 +269,11 @@ int8_t opCode0x77(Cpu* cpu){ // LD (HL), A
 
 int8_t opCode0x78(Cpu* cpu){ // LD A, B
 	cpu->reg_a = cpu->reg_b;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x79(Cpu* cpu){ // LD A, C
+	cpu->reg_a = cpu->reg_c;
 	return PC_NO_JMP;
 }
 
@@ -285,22 +338,28 @@ int8_t opCode0x90(Cpu* cpu){ // SUB B
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xa1(Cpu* cpu){ // AND C
+	opcodes_and(cpu, cpu->reg_c);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xa9(Cpu* cpu){ // XOR C
+	opcodes_xor(cpu, cpu->reg_c);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xaf(Cpu* cpu){// XOR A, A
-	uint8_t result = cpu->reg_a ^ cpu->reg_a;
+	opcodes_xor(cpu, cpu->reg_a);
+	return PC_NO_JMP;
+}
 
-	cpu->reg_a = result;
+int8_t opCode0xb0(Cpu* cpu){ // OR B
+	opcodes_or(cpu, cpu->reg_b);
+	return PC_NO_JMP;
+}
 
-	// Set Z flag if result is 0, clear otherwise
-	if (result == 0){
-		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
-	} else {
-		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
-	}
-
-	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
-	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
-	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
-
+int8_t opCode0xb1(Cpu* cpu){ // OR C
+	opcodes_or(cpu, cpu->reg_c);
 	return PC_NO_JMP;
 }
 
@@ -313,6 +372,12 @@ int8_t opCode0xbe(Cpu* cpu){ // CP (HL)
 int8_t opCode0xc1(Cpu* cpu){ // POP BC
 	pop_stack(cpu, &(cpu->reg_bc));
 	return PC_NO_JMP;
+}
+
+int8_t opCode0xc3(Cpu* cpu){ // JP nn
+	uint16_t addr = get_two_byte_parameter(cpu);
+	cpu->reg_pc = addr;
+	return PC_JMP;
 }
 
 int8_t opCode0xc5(Cpu* cpu){ // PUSH BC
@@ -333,6 +398,16 @@ int8_t opCode0xc9(Cpu* cpu){ // RET
 
 int8_t opCode0xd1(Cpu* cpu){ // POP DE
 	pop_stack(cpu, &(cpu->reg_de));
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xd5(Cpu* cpu){ // PUSH DE
+	push_stack(cpu, cpu->reg_de);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xe1(Cpu* cpu){ // POP HL
+	pop_stack(cpu, &(cpu->reg_hl));
 	return PC_NO_JMP;
 }
 
@@ -363,16 +438,43 @@ int8_t opCode0xe5(Cpu* cpu){ // PUSH HL
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xe6(Cpu* cpu){ // AND n
+	uint8_t value = get_one_byte_parameter(cpu);
+	opcodes_and(cpu, value);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xe9(Cpu* cpu){ // JP (HL)
+	cpu->reg_pc = cpu->reg_hl;
+	return PC_JMP;
+}
+
 int8_t opCode0xea(Cpu* cpu){ // LD (nn), A
 	uint16_t addr = get_two_byte_parameter(cpu);
 	write_to_ram(cpu->interconnect, addr, cpu->reg_a);
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xef(Cpu* cpu){ // RST 28H
+	push_stack(cpu, cpu->reg_pc + 1);
+	cpu->reg_pc = 0x0028;
+	return PC_JMP;
+}
+
 int8_t opCode0xf0(Cpu* cpu){ // LDH A, (n)
 	uint8_t offset = get_one_byte_parameter(cpu);
 	uint16_t addr = 0xFF00 + offset;
 	cpu->reg_a = read_from_ram(cpu->interconnect, addr);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xf3(Cpu* cpu){ // DI (Disable Interrupts)
+	// TODO: Implement interrupt disable when interrupt system is added
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xfb(Cpu* cpu){ // EI (Enable Interrupts)
+	// TODO: Implement interrupt enable when interrupt system is added
 	return PC_NO_JMP;
 }
 
@@ -396,14 +498,24 @@ int8_t opCode0xcb11(Cpu* cpu){ //RL C
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xcb37(Cpu* cpu){ // SWAP A
+	opcodes_swap(cpu, &(cpu->reg_a));
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xcb7c(Cpu* cpu){ // BIT 7h
 	if ( ! get_bit(&(cpu->reg_h), 7) ){
-		set_bit(&(cpu->reg_f), FLAG_BIT_Z);	
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
 	}else{
 		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
 	}
 
 	clear_bit(& (cpu->reg_f), FLAG_BIT_N);
 	set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xcb87(Cpu* cpu){ // RES 0, A
+	clear_bit(&(cpu->reg_a), 0);
 	return PC_NO_JMP;
 }
