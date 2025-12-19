@@ -108,6 +108,37 @@ static inline void opcodes_rl(Cpu* cpu, uint8_t* reg){
 	}
 }
 
+static inline void opcodes_rr(Cpu* cpu, uint8_t* reg){
+	// RR: Rotate right through carry
+	// Old bit 0 -> C flag, C flag -> bit 7
+
+	uint8_t old_carry = get_bit(&(cpu->reg_f), FLAG_BIT_C) ? 1 : 0;
+	uint8_t result = *reg;
+
+	// Set C flag to old bit 0
+	if ((result & 0x01) != 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	// Rotate right and insert old carry at bit 7
+	result >>= 1;
+	result |= (old_carry << 7);
+	*reg = result;
+
+	// Clear N and H flags
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+
+	// Set Z flag based on result
+	if (result == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+}
+
 static inline void opcodes_cp(Cpu* cpu, uint8_t number){
 	// CP: Compare A with number (A - number)
 	// Z=1 if A==number, N=1, H=1 if borrow from bit 4, C=1 if A<number
@@ -213,6 +244,38 @@ static inline void opcodes_add(Cpu* cpu, uint8_t value){
 	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
 }
 
+static inline void opcodes_adc(Cpu* cpu, uint8_t value){
+	// ADC: Add with carry - Z if result is 0, N=0, H if carry from bit 3, C if carry from bit 7
+	uint8_t carry = get_bit(&(cpu->reg_f), FLAG_BIT_C) ? 1 : 0;
+	uint16_t result = cpu->reg_a + value + carry;
+
+	// Set H flag if carry from bit 3 (half carry)
+	if (((cpu->reg_a & 0x0F) + (value & 0x0F) + carry) > 0x0F) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+	}
+
+	// Set C flag if carry from bit 7 (result > 0xFF)
+	if (result > 0xFF) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	cpu->reg_a = (uint8_t)result;
+
+	// Set Z flag if result is 0
+	if (cpu->reg_a == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N flag (ADC always clears N)
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+}
+
 static inline void opcodes_sub(Cpu* cpu, uint8_t value){
 	// SUB: Z if result is 0, N=1, H if borrow from bit 4, C if borrow occurred (A < value)
 
@@ -293,6 +356,32 @@ static inline void opcodes_swap(Cpu* cpu, uint8_t* reg){
 	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
 	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
 	clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+}
+
+static inline void opcodes_srl(Cpu* cpu, uint8_t* reg){
+	// SRL: Shift right logical - Z if result is 0, N=0, H=0, C=old bit 0
+	// Bit 7 becomes 0, old bit 0 goes to carry flag
+
+	// Set C flag to old bit 0
+	if ((*reg & 0x01) != 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	// Shift right, bit 7 becomes 0
+	*reg >>= 1;
+
+	// Set Z flag if result is 0
+	if (*reg == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N and H flags
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
 }
 
 static inline void opcodes_xor(Cpu* cpu, uint8_t value){

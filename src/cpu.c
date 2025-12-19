@@ -334,6 +334,7 @@ void initialize_opcodes(void){
 	// Instruction table: cycles are in M-cycles (1 M-cycle = 4 T-cycles)
 	instructions[0x00] = (Instruction){"NOP", 0, 1, opCode0x00};
 	instructions[0x01] = (Instruction){"LD BC, $%x", 2, 3, opCode0x01};
+	instructions[0x03] = (Instruction){"INC BC", 0, 2, opCode0x03};
 	instructions[0x04] = (Instruction){"INC B", 0, 1, opCode0x04};
 	instructions[0x05] = (Instruction){"DEC B", 0, 1, opCode0x05};
 	instructions[0x06] = (Instruction){"LD B, 0x%x", 1, 2, opCode0x06};
@@ -346,12 +347,15 @@ void initialize_opcodes(void){
 	instructions[0x11] = (Instruction){"LD DE, $%x", 2, 3, opCode0x11};
 	instructions[0x12] = (Instruction){"LD (DE), A", 0, 2, opCode0x12};
 	instructions[0x13] = (Instruction){"INC DE", 0, 2, opCode0x13};
+	instructions[0x14] = (Instruction){"INC D", 0, 1, opCode0x14};
 	instructions[0x15] = (Instruction){"DEC D", 0, 1, opCode0x15};
 	instructions[0x16] = (Instruction){"LD D, 0x%x", 1, 2, opCode0x16};
 	instructions[0x17] = (Instruction){"RLA", 0, 1, opCode0x17};
 	instructions[0x18] = (Instruction){"JR 0x%x", 1, 3, opCode0x18};
 	instructions[0x19] = (Instruction){"ADD HL, DE", 0, 2, opCode0x19};
 	instructions[0x1a] = (Instruction){"LD A, (DE)", 0, 2, opCode0x1a};
+	instructions[0x1b] = (Instruction){"DEC DE", 0, 2, opCode0x1b};
+	instructions[0x1f] = (Instruction){"RRA", 0, 1, opCode0x1f};
 	instructions[0x1c] = (Instruction){"INC E", 0, 1, opCode0x1c};
 	instructions[0x1d] = (Instruction){"DEC E", 0, 1, opCode0x1d};
 	instructions[0x1e] = (Instruction){"LD E, 0x%x", 1, 2, opCode0x1e};
@@ -362,30 +366,46 @@ void initialize_opcodes(void){
 	instructions[0x23] = (Instruction){"INC HL", 0, 2, opCode0x23};
 	instructions[0x24] = (Instruction){"INC H", 0, 1, opCode0x24};
 	instructions[0x25] = (Instruction){"DEC H", 0, 1, opCode0x25};
+	instructions[0x26] = (Instruction){"LD H, 0x%x", 1, 2, opCode0x26};
 	instructions[0x28] = (Instruction){"JR Z, 0x%x", 1, 2, opCode0x28};
+	instructions[0x29] = (Instruction){"ADD HL, HL", 0, 2, opCode0x29};
 	instructions[0x2a] = (Instruction){"LDI A, (HL)", 0, 2, opCode0x2a};
+	instructions[0x2b] = (Instruction){"DEC HL", 0, 2, opCode0x2b};
 	instructions[0x2c] = (Instruction){"INC L", 0, 1, opCode0x2c};
+	instructions[0x2d] = (Instruction){"DEC L", 0, 1, opCode0x2d};
+	instructions[0x30] = (Instruction){"JR NC, 0x%x", 1, 2, opCode0x30};
 
 	instructions[0x31] = (Instruction){"LD SP, $%x", 2, 3, opCode0x31};
 	instructions[0x32] = (Instruction){"LDD HL, A", 0, 2, opCode0x32};
 	instructions[0x34] = (Instruction){"INC (HL)", 0, 3, opCode0x34};
+	instructions[0x35] = (Instruction){"DEC (HL)", 0, 3, opCode0x35};
 	instructions[0x36] = (Instruction){"LD (HL), 0x%x", 1, 3, opCode0x36};
+	instructions[0x38] = (Instruction){"JR C, 0x%x", 1, 2, opCode0x38};
 	instructions[0x3c] = (Instruction){"INC A", 0, 1, opCode0x3c};
 	instructions[0x3d] = (Instruction){"DEC A", 0, 1, opCode0x3d};
 	instructions[0x3e] = (Instruction){"LD A, $%x", 1, 2, opCode0x3e};
 
+	instructions[0x46] = (Instruction){"LD B,(HL)", 0, 2, opCode0x46};
 	instructions[0x47] = (Instruction){"LD B,A", 0, 1, opCode0x47};
+	instructions[0x4e] = (Instruction){"LD C,(HL)", 0, 2, opCode0x4e};
 	instructions[0x4f] = (Instruction){"LD C,A", 0, 1, opCode0x4f};
 
 	instructions[0x56] = (Instruction){"LD D,(HL)", 0, 2, opCode0x56};
 	instructions[0x57] = (Instruction){"LD D,A", 0, 1, opCode0x57};
 	instructions[0x5e] = (Instruction){"LD E,(HL)", 0, 2, opCode0x5e};
 	instructions[0x5f] = (Instruction){"LD E,A", 0, 1, opCode0x5f};
+	instructions[0x66] = (Instruction){"LD H,(HL)", 0, 2, opCode0x66};
 	instructions[0x67] = (Instruction){"LD H,A", 0, 1, opCode0x67};
+	instructions[0x6e] = (Instruction){"LD L,(HL)", 0, 2, opCode0x6e};
+	instructions[0x6f] = (Instruction){"LD L,A", 0, 1, opCode0x6f};
+	instructions[0x70] = (Instruction){"LD (HL),B", 0, 2, opCode0x70};
+	instructions[0x71] = (Instruction){"LD (HL),C", 0, 2, opCode0x71};
+	instructions[0x72] = (Instruction){"LD (HL),D", 0, 2, opCode0x72};
 	instructions[0x76] = (Instruction){"HALT", 0, 1, opCode0x76};
 	instructions[0x77] = (Instruction){"LD (HL), A", 0, 2, opCode0x77};
 	instructions[0x78] = (Instruction){"LD A,B", 0, 1, opCode0x78};
 	instructions[0x79] = (Instruction){"LD A,C", 0, 1, opCode0x79};
+	instructions[0x7a] = (Instruction){"LD A,D", 0, 1, opCode0x7a};
 	instructions[0x7b] = (Instruction){"LD A,E", 0, 1, opCode0x7b};
 	instructions[0x7c] = (Instruction){"LD A,H", 0, 1, opCode0x7c};
 	instructions[0x7d] = (Instruction){"LD A,L", 0, 1, opCode0x7d};
@@ -403,26 +423,37 @@ void initialize_opcodes(void){
 	instructions[0x90] = (Instruction){"SUB B", 0, 1, opCode0x90};
 
 	instructions[0xa1] = (Instruction){"AND C", 0, 1, opCode0xa1};
+	instructions[0xa6] = (Instruction){"AND (HL)", 0, 2, opCode0xa6};
 	instructions[0xa7] = (Instruction){"AND A", 0, 1, opCode0xa7};
 	instructions[0xa9] = (Instruction){"XOR C", 0, 1, opCode0xa9};
+	instructions[0xae] = (Instruction){"XOR (HL)", 0, 2, opCode0xae};
 	instructions[0xaf] = (Instruction){"XOR A, A", 0, 1, opCode0xaf};
 	instructions[0xb0] = (Instruction){"OR B", 0, 1, opCode0xb0};
 	instructions[0xb1] = (Instruction){"OR C", 0, 1, opCode0xb1};
+	instructions[0xb6] = (Instruction){"OR (HL)", 0, 2, opCode0xb6};
+	instructions[0xb7] = (Instruction){"OR A", 0, 1, opCode0xb7};
+	instructions[0xbb] = (Instruction){"CP E", 0, 1, opCode0xbb};
 
 	instructions[0xbe] = (Instruction){"CP (HL)", 0, 2, opCode0xbe};
 
 	instructions[0xc0] = (Instruction){"RET NZ", 0, 2, opCode0xc0};
 	instructions[0xc1] = (Instruction){"POP BC", 0, 3, opCode0xc1};
+	instructions[0xc2] = (Instruction){"JP NZ, $%x", 2, 3, opCode0xc2};
 	instructions[0xc3] = (Instruction){"JP $%x", 2, 4, opCode0xc3};
+	instructions[0xc4] = (Instruction){"CALL NZ, $%x", 2, 3, opCode0xc4};
 	instructions[0xc5] = (Instruction){"PUSH BC", 0, 4, opCode0xc5};
 	instructions[0xca] = (Instruction){"JP Z, $%x", 2, 3, opCode0xca};
+	instructions[0xce] = (Instruction){"ADC A,0x%x", 1, 2, opCode0xce};
 	instructions[0xc6] = (Instruction){"ADD A,0x%x", 1, 2, opCode0xc6};
 	instructions[0xc8] = (Instruction){"RET Z", 0, 2, opCode0xc8};
 	instructions[0xc9] = (Instruction){"RET", 0, 4, opCode0xc9};  // Unconditional RET: 16 T-cycles
 	instructions[0xcd] = (Instruction){"CALL $%x", 2, 6, opCode0xcd};  // CALL: 24 T-cycles
 
+	instructions[0xd0] = (Instruction){"RET NC", 0, 2, opCode0xd0};
 	instructions[0xd1] = (Instruction){"POP DE", 0, 3, opCode0xd1};
 	instructions[0xd5] = (Instruction){"PUSH DE", 0, 4, opCode0xd5};
+	instructions[0xd6] = (Instruction){"SUB 0x%x", 1, 2, opCode0xd6};
+	instructions[0xd8] = (Instruction){"RET C", 0, 2, opCode0xd8};
 	instructions[0xd9] = (Instruction){"RETI", 0, 4, opCode0xd9};
 
 	instructions[0xe1] = (Instruction){"POP HL", 0, 3, opCode0xe1};
@@ -432,6 +463,7 @@ void initialize_opcodes(void){
 	instructions[0xe6] = (Instruction){"AND 0x%x", 1, 2, opCode0xe6};
 	instructions[0xe9] = (Instruction){"JP (HL)", 0, 1, opCode0xe9};
 	instructions[0xea] = (Instruction){"LD $%x, A", 2, 4, opCode0xea};
+	instructions[0xee] = (Instruction){"XOR 0x%x", 1, 2, opCode0xee};
 	instructions[0xef] = (Instruction){"RST 28", 0, 4, opCode0xef};
 
 	instructions[0xf0] = (Instruction){"LDH A, 0x%x", 1, 3, opCode0xf0};
@@ -448,7 +480,14 @@ void initialize_opcodes(void){
 	//--------------------------------------------------------------------
 
 	cb_instructions[0x11] = (Instruction){"RL C", 0, 2, opCode0xcb11};
+	cb_instructions[0x12] = (Instruction){"RL D", 0, 2, opCode0xcb12};
+	cb_instructions[0x19] = (Instruction){"RR C", 0, 2, opCode0xcb19};
+	cb_instructions[0x1a] = (Instruction){"RR D", 0, 2, opCode0xcb1a};
 	cb_instructions[0x37] = (Instruction){"SWAP A", 0, 2, opCode0xcb37};
+	cb_instructions[0x38] = (Instruction){"SRL B", 0, 2, opCode0xcb38};
+	cb_instructions[0x4c] = (Instruction){"BIT 1, H", 0, 2, opCode0xcb4c};
+	cb_instructions[0x4f] = (Instruction){"BIT 1, A", 0, 2, opCode0xcb4f};
+	cb_instructions[0x78] = (Instruction){"BIT 7, B", 0, 2, opCode0xcb78};
 	cb_instructions[0x7c] = (Instruction){"BIT 7, H", 0, 2, opCode0xcb7c};
 	cb_instructions[0x87] = (Instruction){"RES 0, A", 0, 2, opCode0xcb87};
 

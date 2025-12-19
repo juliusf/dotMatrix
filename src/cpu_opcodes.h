@@ -10,6 +10,11 @@ int8_t opCode0x01(Cpu* cpu){ // LD BC, nn
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x03(Cpu* cpu){ // INC BC
+	cpu->reg_bc++;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x04(Cpu* cpu){ // INC B
 	cpu->reg_b++;
 	cpu_inc_toggle_bits(cpu, &(cpu->reg_b));
@@ -77,6 +82,11 @@ int8_t opCode0x1a(Cpu* cpu){ // LD A, (DE)
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x1b(Cpu* cpu){ // DEC DE
+	cpu->reg_de--;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x1c(Cpu* cpu){ // INC E
 	cpu->reg_e++;
 	cpu_inc_toggle_bits(cpu, &(cpu->reg_e));
@@ -97,6 +107,12 @@ int8_t opCode0x1e(Cpu* cpu){ // LD E, n
 
 int8_t opCode0x13(Cpu* cpu){ // INC DE
 	cpu->reg_de++;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x14(Cpu* cpu){ // INC D
+	cpu->reg_d++;
+	cpu_inc_toggle_bits(cpu, &(cpu->reg_d));
 	return PC_NO_JMP;
 }
 
@@ -121,6 +137,13 @@ int8_t opCode0x18(Cpu* cpu){ // JR n
 	int8_t addr_offset = get_one_byte_parameter(cpu);
 	cpu->reg_pc += addr_offset + 2;
 	return PC_JMP;
+}
+
+int8_t opCode0x1f(Cpu* cpu){ // RRA
+	opcodes_rr(cpu, &(cpu->reg_a));
+	// RRA always clears Z flag (unlike CB RR which sets Z based on result)
+	clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	return PC_NO_JMP;
 }
 
 int8_t opCode0x19(Cpu* cpu){ // ADD HL, DE
@@ -170,6 +193,12 @@ int8_t opCode0x25(Cpu* cpu){ // DEC H
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x26(Cpu* cpu){ // LD H, n
+	uint8_t value = get_one_byte_parameter(cpu);
+	cpu->reg_h = value;
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x28(Cpu* cpu){ // JR Z, n
 	int8_t offset = get_one_byte_parameter(cpu);
 
@@ -182,9 +211,19 @@ int8_t opCode0x28(Cpu* cpu){ // JR Z, n
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x29(Cpu* cpu){ // ADD HL, HL
+	opcodes_add_hl(cpu, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x2a(Cpu* cpu){ // LDI A, (HL)
 	cpu->reg_a = read_from_ram(cpu->interconnect, cpu->reg_hl);
 	cpu->reg_hl++;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x2b(Cpu* cpu){ // DEC HL
+	cpu->reg_hl--;
 	return PC_NO_JMP;
 }
 
@@ -194,12 +233,30 @@ int8_t opCode0x2c(Cpu* cpu){ // INC L
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x2d(Cpu* cpu){ // DEC L
+	cpu->reg_l--;
+	cpu_dec_toggle_bits(cpu, &(cpu->reg_l));
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x2f(Cpu* cpu){ // CPL
 	// CPL: Complement A (invert all bits)
 	// N=1, H=1, Z and C unchanged
 	cpu->reg_a = ~cpu->reg_a;
 	set_bit(&(cpu->reg_f), FLAG_BIT_N);
 	set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x30(Cpu* cpu){ // JR NC, n
+	int8_t offset = get_one_byte_parameter(cpu);
+
+	if (!get_bit(&(cpu->reg_f), FLAG_BIT_C)){
+		cpu->reg_pc = cpu->reg_pc + 2 + offset;
+		cpu->cycles_left = 3; // Branch taken: 12 T-cycles = 3 M-cycles
+		return PC_JMP;
+	}
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
 	return PC_NO_JMP;
 }
 
@@ -223,9 +280,29 @@ int8_t opCode0x34(Cpu* cpu){ // INC (HL)
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x35(Cpu* cpu){ // DEC (HL)
+	uint8_t value = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	value--;
+	cpu_dec_toggle_bits(cpu, &value);
+	write_to_ram(cpu->interconnect, cpu->reg_hl, value);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x36(Cpu* cpu){ // LD (HL), n
 	uint8_t value = get_one_byte_parameter(cpu);
 	write_to_ram(cpu->interconnect, cpu->reg_hl, value);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x38(Cpu* cpu){ // JR C, n
+	int8_t offset = get_one_byte_parameter(cpu);
+
+	if (get_bit(&(cpu->reg_f), FLAG_BIT_C)){
+		cpu->reg_pc = cpu->reg_pc + 2 + offset;
+		cpu->cycles_left = 3; // Branch taken: 12 T-cycles = 3 M-cycles
+		return PC_JMP;
+	}
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
 	return PC_NO_JMP;
 }
 
@@ -247,8 +324,18 @@ int8_t opCode0x3e(Cpu* cpu){ // LD A,n
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x46(Cpu* cpu){ // LD B, (HL)
+	cpu->reg_b = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x47(Cpu* cpu){ // LD B, A
 	cpu->reg_b = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x4e(Cpu* cpu){ // LD C, (HL)
+	cpu->reg_c = read_from_ram(cpu->interconnect, cpu->reg_hl);
 	return PC_NO_JMP;
 }
 
@@ -277,8 +364,38 @@ int8_t opCode0x5f(Cpu* cpu){ // LD E, A
 	return PC_NO_JMP;
 }
 
+int8_t opCode0x66(Cpu* cpu){ // LD H, (HL)
+	cpu->reg_h = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0x67(Cpu* cpu){ // LD H, A
 	cpu->reg_h = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x6e(Cpu* cpu){ // LD L, (HL)
+	cpu->reg_l = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x6f(Cpu* cpu){ // LD L, A
+	cpu->reg_l = cpu->reg_a;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x70(Cpu* cpu){ // LD (HL), B
+	write_to_ram(cpu->interconnect, cpu->reg_hl, cpu->reg_b);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x71(Cpu* cpu){ // LD (HL), C
+	write_to_ram(cpu->interconnect, cpu->reg_hl, cpu->reg_c);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x72(Cpu* cpu){ // LD (HL), D
+	write_to_ram(cpu->interconnect, cpu->reg_hl, cpu->reg_d);
 	return PC_NO_JMP;
 }
 
@@ -299,6 +416,11 @@ int8_t opCode0x78(Cpu* cpu){ // LD A, B
 
 int8_t opCode0x79(Cpu* cpu){ // LD A, C
 	cpu->reg_a = cpu->reg_c;
+	return PC_NO_JMP;
+}
+
+int8_t opCode0x7a(Cpu* cpu){ // LD A, D
+	cpu->reg_a = cpu->reg_d;
 	return PC_NO_JMP;
 }
 
@@ -373,6 +495,12 @@ int8_t opCode0xa1(Cpu* cpu){ // AND C
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xa6(Cpu* cpu){ // AND (HL)
+	uint8_t value = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	opcodes_and(cpu, value);
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xa7(Cpu* cpu){ // AND A
 	opcodes_and(cpu, cpu->reg_a);
 	return PC_NO_JMP;
@@ -380,6 +508,12 @@ int8_t opCode0xa7(Cpu* cpu){ // AND A
 
 int8_t opCode0xa9(Cpu* cpu){ // XOR C
 	opcodes_xor(cpu, cpu->reg_c);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xae(Cpu* cpu){ // XOR (HL)
+	uint8_t value = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	opcodes_xor(cpu, value);
 	return PC_NO_JMP;
 }
 
@@ -395,6 +529,22 @@ int8_t opCode0xb0(Cpu* cpu){ // OR B
 
 int8_t opCode0xb1(Cpu* cpu){ // OR C
 	opcodes_or(cpu, cpu->reg_c);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xb6(Cpu* cpu){ // OR (HL)
+	uint8_t value = read_from_ram(cpu->interconnect, cpu->reg_hl);
+	opcodes_or(cpu, value);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xb7(Cpu* cpu){ // OR A
+	opcodes_or(cpu, cpu->reg_a);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xbb(Cpu* cpu){ // CP E
+	opcodes_cp(cpu, cpu->reg_e);
 	return PC_NO_JMP;
 }
 
@@ -419,10 +569,33 @@ int8_t opCode0xc1(Cpu* cpu){ // POP BC
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xc2(Cpu* cpu){ // JP NZ, nn
+	uint16_t addr = get_two_byte_parameter(cpu);
+	if (!get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
+		cpu->reg_pc = addr;
+		cpu->cycles_left = 4; // Branch taken: 16 T-cycles = 4 M-cycles
+		return PC_JMP;
+	}
+	cpu->cycles_left = 3; // Branch not taken: 12 T-cycles = 3 M-cycles
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xc3(Cpu* cpu){ // JP nn
 	uint16_t addr = get_two_byte_parameter(cpu);
 	cpu->reg_pc = addr;
 	return PC_JMP;
+}
+
+int8_t opCode0xc4(Cpu* cpu){ // CALL NZ, nn
+	uint16_t addr = get_two_byte_parameter(cpu);
+	if (!get_bit(&(cpu->reg_f), FLAG_BIT_Z)){
+		push_stack(cpu, cpu->reg_pc + 3);
+		cpu->reg_pc = addr;
+		cpu->cycles_left = 6; // Branch taken: 24 T-cycles = 6 M-cycles
+		return PC_JMP;
+	}
+	cpu->cycles_left = 3; // Branch not taken: 12 T-cycles = 3 M-cycles
+	return PC_NO_JMP;
 }
 
 int8_t opCode0xca(Cpu* cpu){ // JP Z, nn
@@ -433,6 +606,12 @@ int8_t opCode0xca(Cpu* cpu){ // JP Z, nn
 		return PC_JMP;
 	}
 	cpu->cycles_left = 3; // Branch not taken: 12 T-cycles = 3 M-cycles
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xce(Cpu* cpu){ // ADC A, n
+	uint8_t value = get_one_byte_parameter(cpu);
+	opcodes_adc(cpu, value);
 	return PC_NO_JMP;
 }
 
@@ -462,8 +641,34 @@ int8_t opCode0xc9(Cpu* cpu){ // RET
 	return PC_JMP;
 }
 
+int8_t opCode0xd0(Cpu* cpu){ // RET NC
+	if (!get_bit(&(cpu->reg_f), FLAG_BIT_C)){
+		pop_stack(cpu, &(cpu->reg_pc));
+		cpu->cycles_left = 5; // Branch taken: 20 T-cycles = 5 M-cycles
+		return PC_JMP;
+	}
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xd1(Cpu* cpu){ // POP DE
 	pop_stack(cpu, &(cpu->reg_de));
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xd6(Cpu* cpu){ // SUB n
+	uint8_t value = get_one_byte_parameter(cpu);
+	opcodes_sub(cpu, value);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xd8(Cpu* cpu){ // RET C
+	if (get_bit(&(cpu->reg_f), FLAG_BIT_C)){
+		pop_stack(cpu, &(cpu->reg_pc));
+		cpu->cycles_left = 5; // Branch taken: 20 T-cycles = 5 M-cycles
+		return PC_JMP;
+	}
+	cpu->cycles_left = 2; // Branch not taken: 8 T-cycles = 2 M-cycles
 	return PC_NO_JMP;
 }
 
@@ -524,6 +729,12 @@ int8_t opCode0xe9(Cpu* cpu){ // JP (HL)
 int8_t opCode0xea(Cpu* cpu){ // LD (nn), A
 	uint16_t addr = get_two_byte_parameter(cpu);
 	write_to_ram(cpu->interconnect, addr, cpu->reg_a);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xee(Cpu* cpu){ // XOR n
+	uint8_t value = get_one_byte_parameter(cpu);
+	opcodes_xor(cpu, value);
 	return PC_NO_JMP;
 }
 
@@ -589,8 +800,64 @@ int8_t opCode0xcb11(Cpu* cpu){ //RL C
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xcb12(Cpu* cpu){ //RL D
+	opcodes_rl(cpu, &(cpu->reg_d));
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xcb19(Cpu* cpu){ //RR C
+	opcodes_rr(cpu, &(cpu->reg_c));
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xcb1a(Cpu* cpu){ //RR D
+	opcodes_rr(cpu, &(cpu->reg_d));
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xcb37(Cpu* cpu){ // SWAP A
 	opcodes_swap(cpu, &(cpu->reg_a));
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xcb38(Cpu* cpu){ // SRL B
+	opcodes_srl(cpu, &(cpu->reg_b));
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xcb4c(Cpu* cpu){ // BIT 1, H
+	if ( ! get_bit(&(cpu->reg_h), 1) ){
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}else{
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	clear_bit(& (cpu->reg_f), FLAG_BIT_N);
+	set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xcb4f(Cpu* cpu){ // BIT 1, A
+	if ( ! get_bit(&(cpu->reg_a), 1) ){
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}else{
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	clear_bit(& (cpu->reg_f), FLAG_BIT_N);
+	set_bit(&(cpu->reg_f), FLAG_BIT_H);
+	return PC_NO_JMP;
+}
+
+int8_t opCode0xcb78(Cpu* cpu){ // BIT 7, B
+	if ( ! get_bit(&(cpu->reg_b), 7) ){
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}else{
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	clear_bit(& (cpu->reg_f), FLAG_BIT_N);
+	set_bit(&(cpu->reg_f), FLAG_BIT_H);
 	return PC_NO_JMP;
 }
 
