@@ -10,7 +10,9 @@
 void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu){
 	*interconnect = (Interconnect*) malloc(sizeof(Interconnect));
 	memset(*interconnect, 0, sizeof(Interconnect));
-	memset((*interconnect)->ram, 0xce, RAM_SIZE);
+	// Initialize RAM to 0x00 for deterministic behavior (standard for most emulators)
+	// Real hardware has undefined RAM state, but 0x00 provides better compatibility
+	memset((*interconnect)->ram, 0x00, RAM_SIZE);
 	initialize_cpu(cpu, (*interconnect));
 	(*interconnect)->cpu = *cpu;
 	(*interconnect)->inBios = TRUE;
@@ -26,6 +28,17 @@ void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu){
 	(*interconnect)->tac = 0x00;
 	(*interconnect)->div_counter = 0;
 	(*interconnect)->timer_counter = 0;
+
+	// Initialize joypad (all buttons released)
+	(*interconnect)->joyp = 0xFF;
+	(*interconnect)->button_a = 1;
+	(*interconnect)->button_b = 1;
+	(*interconnect)->button_start = 1;
+	(*interconnect)->button_select = 1;
+	(*interconnect)->button_up = 1;
+	(*interconnect)->button_down = 1;
+	(*interconnect)->button_left = 1;
+	(*interconnect)->button_right = 1;
 
 	// Initialize PPU
 	initialize_ppu(&((*interconnect)->ppu));
@@ -49,6 +62,32 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 	// OAM (0xFE00-0xFE9F)
 	if (addr >= 0xFE00 && addr <= 0xFE9F){
 		return ppu_read_oam(interconnect->ppu, addr);
+	}
+
+	// Joypad register (0xFF00)
+	if (addr == 0xFF00) {
+		uint8_t result = interconnect->joyp | 0xC0;  // Bits 7-6 always set
+
+		// Check which button group is selected
+		if (!(interconnect->joyp & 0x10)) {
+			// Direction keys selected (bit 4 = 0)
+			result &= 0xF0;  // Clear lower 4 bits
+			result |= (interconnect->button_right & 0x01) << 0;  // Right
+			result |= (interconnect->button_left & 0x01) << 1;   // Left
+			result |= (interconnect->button_up & 0x01) << 2;     // Up
+			result |= (interconnect->button_down & 0x01) << 3;   // Down
+		}
+
+		if (!(interconnect->joyp & 0x20)) {
+			// Button keys selected (bit 5 = 0)
+			result &= 0xF0;  // Clear lower 4 bits
+			result |= (interconnect->button_a & 0x01) << 0;      // A
+			result |= (interconnect->button_b & 0x01) << 1;      // B
+			result |= (interconnect->button_select & 0x01) << 2; // Select
+			result |= (interconnect->button_start & 0x01) << 3;  // Start
+		}
+
+		return result;
 	}
 
 	// LCD Registers (0xFF40-0xFF4B)
@@ -94,6 +133,13 @@ void write_to_ram(Interconnect* interconnect, uint16_t addr, uint8_t value)
 	// OAM (0xFE00-0xFE9F)
 	if (addr >= 0xFE00 && addr <= 0xFE9F){
 		ppu_write_oam(interconnect->ppu, addr, value);
+		return;
+	}
+
+	// Joypad register (0xFF00)
+	if (addr == 0xFF00) {
+		// Only bits 5-4 are writable (select button group)
+		interconnect->joyp = (value & 0x30) | 0xCF;
 		return;
 	}
 

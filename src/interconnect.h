@@ -29,6 +29,18 @@ typedef struct Interconnect_t{
 	uint8_t tac;   // 0xFF07 - Timer Control
 	uint16_t div_counter;   // Internal counter for DIV
 	uint16_t timer_counter; // Internal counter for TIMA
+
+	// Joypad state (0xFF00)
+	uint8_t joyp;  // 0xFF00 - Joypad register
+	// Button states (0 = pressed, 1 = not pressed)
+	uint8_t button_a;
+	uint8_t button_b;
+	uint8_t button_start;
+	uint8_t button_select;
+	uint8_t button_up;
+	uint8_t button_down;
+	uint8_t button_left;
+	uint8_t button_right;
 } Interconnect;
 
 

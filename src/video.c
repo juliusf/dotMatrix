@@ -12,12 +12,13 @@ static Color dmg_palette[4] = {
 	{15, 56, 15, 255}      // Color 3: Darkest (Black)
 };
 
-void initialize_video(Video** video, PPU* ppu){
+void initialize_video(Video** video, Interconnect* interconnect){
 	*video = (Video*) malloc(sizeof(Video));
 	memset(*video, 0, sizeof(Video));
 	(*video)->window_width = GB_SCREEN_WIDTH * SCREEN_SCALE;
 	(*video)->window_height = GB_SCREEN_HEIGHT * SCREEN_SCALE;
-	(*video)->ppu = ppu;
+	(*video)->ppu = interconnect->ppu;
+	(*video)->interconnect = interconnect;
 }
 
 void run_video_loop(Video* video){
@@ -47,6 +48,21 @@ void run_video_loop(Video* video){
 			UpdateTexture(texture, pixels);
 			free(pixels);
 		}
+
+		// Poll keyboard input and update joypad state
+		// Arrow keys for D-pad
+		video->interconnect->button_up    = IsKeyDown(KEY_UP) ? 0 : 1;
+		video->interconnect->button_down  = IsKeyDown(KEY_DOWN) ? 0 : 1;
+		video->interconnect->button_left  = IsKeyDown(KEY_LEFT) ? 0 : 1;
+		video->interconnect->button_right = IsKeyDown(KEY_RIGHT) ? 0 : 1;
+
+		// Z/X for A/B
+		video->interconnect->button_a = IsKeyDown(KEY_Z) ? 0 : 1;
+		video->interconnect->button_b = IsKeyDown(KEY_X) ? 0 : 1;
+
+		// Enter for Start, Shift for Select
+		video->interconnect->button_start  = IsKeyDown(KEY_ENTER) ? 0 : 1;
+		video->interconnect->button_select = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT) ? 0 : 1;
 
 		BeginDrawing();
 		ClearBackground(BLACK);
