@@ -384,6 +384,32 @@ static inline void opcodes_srl(Cpu* cpu, uint8_t* reg){
 	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
 }
 
+static inline void opcodes_sla(Cpu* cpu, uint8_t* reg){
+	// SLA: Shift left arithmetic - Z if result is 0, N=0, H=0, C=old bit 7
+	// Bit 0 becomes 0, old bit 7 goes to carry flag
+
+	// Set C flag to old bit 7
+	if ((*reg & 0x80) != 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_C);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_C);
+	}
+
+	// Shift left, bit 0 becomes 0
+	*reg <<= 1;
+
+	// Set Z flag if result is 0
+	if (*reg == 0) {
+		set_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	} else {
+		clear_bit(&(cpu->reg_f), FLAG_BIT_Z);
+	}
+
+	// Clear N and H flags
+	clear_bit(&(cpu->reg_f), FLAG_BIT_N);
+	clear_bit(&(cpu->reg_f), FLAG_BIT_H);
+}
+
 static inline void opcodes_xor(Cpu* cpu, uint8_t value){
 	// XOR: Z if result is 0, N=0, H=0, C=0
 	cpu->reg_a ^= value;

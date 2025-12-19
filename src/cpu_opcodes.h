@@ -823,6 +823,11 @@ int8_t opCode0xcb1a(Cpu* cpu){ //RR D
 	return PC_NO_JMP;
 }
 
+int8_t opCode0xcb27(Cpu* cpu){ // SLA A
+	opcodes_sla(cpu, &(cpu->reg_a));
+	return PC_NO_JMP;
+}
+
 int8_t opCode0xcb37(Cpu* cpu){ // SWAP A
 	opcodes_swap(cpu, &(cpu->reg_a));
 	return PC_NO_JMP;

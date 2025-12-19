@@ -487,6 +487,7 @@ void initialize_opcodes(void){
 	cb_instructions[0x12] = (Instruction){"RL D", 0, 2, opCode0xcb12};
 	cb_instructions[0x19] = (Instruction){"RR C", 0, 2, opCode0xcb19};
 	cb_instructions[0x1a] = (Instruction){"RR D", 0, 2, opCode0xcb1a};
+	cb_instructions[0x27] = (Instruction){"SLA A", 0, 2, opCode0xcb27};
 	cb_instructions[0x37] = (Instruction){"SWAP A", 0, 2, opCode0xcb37};
 	cb_instructions[0x38] = (Instruction){"SRL B", 0, 2, opCode0xcb38};
 	cb_instructions[0x4c] = (Instruction){"BIT 1, H", 0, 2, opCode0xcb4c};
