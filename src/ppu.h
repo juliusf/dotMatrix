@@ -50,6 +50,24 @@
 #define COLOR_DARK_GRAY  2
 #define COLOR_BLACK      3
 
+// Sprite attributes (Byte 3 of OAM entry)
+#define SPRITE_ATTR_PRIORITY    0x80  // Bit 7: 0=Above BG, 1=Behind BG colors 1-3
+#define SPRITE_ATTR_Y_FLIP      0x40  // Bit 6: Vertical flip
+#define SPRITE_ATTR_X_FLIP      0x20  // Bit 5: Horizontal flip
+#define SPRITE_ATTR_PALETTE     0x10  // Bit 4: Palette (0=OBP0, 1=OBP1)
+
+// Sprite limits
+#define MAX_SPRITES_PER_LINE 10
+#define SPRITES_IN_OAM 40
+
+// Sprite structure (OAM entry)
+typedef struct Sprite_t {
+	uint8_t y;          // Y position (actual Y = value - 16)
+	uint8_t x;          // X position (actual X = value - 8)
+	uint8_t tile;       // Tile number
+	uint8_t attributes; // Attributes/flags
+} Sprite;
+
 typedef struct PPU_t {
 	// Video RAM
 	uint8_t vram[VRAM_SIZE];
@@ -57,6 +75,9 @@ typedef struct PPU_t {
 
 	// Framebuffer (160x144, 2 bits per pixel = 4 colors)
 	uint8_t framebuffer[LCD_WIDTH * LCD_HEIGHT];
+
+	// BG color indices (before palette mapping, needed for sprite priority)
+	uint8_t bg_colors[LCD_WIDTH * LCD_HEIGHT];
 
 	// LCD Registers
 	uint8_t lcdc;      // 0xFF40 - LCD Control
@@ -83,6 +104,7 @@ typedef struct PPU_t {
 void initialize_ppu(PPU** ppu);
 void ppu_step(PPU* ppu, uint32_t cycles);
 void ppu_render_scanline(PPU* ppu);
+void ppu_render_sprites(PPU* ppu, uint8_t scanline);
 
 // Register access
 uint8_t ppu_read_register(PPU* ppu, uint16_t addr);

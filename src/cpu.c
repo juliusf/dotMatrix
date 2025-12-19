@@ -87,13 +87,6 @@ void handle_interrupts(Cpu* cpu) {
 	// (HALT wakes up even if IME is disabled)
 	if (cpu->halted && pending) {
 		cpu->halted = 0;
-		static uint32_t halt_wake_count = 0;
-		halt_wake_count++;
-		if (halt_wake_count % 100 == 0) {
-			fprintf(stderr, "HALT woke up %u times (IF=0x%02x, IE=0x%02x, IME=%d)\n",
-			        halt_wake_count, cpu->interconnect->interrupt_flag,
-			        cpu->interconnect->interrupt_enable, cpu->ime);
-		}
 	}
 
 	// Only handle interrupts if IME is enabled
@@ -138,26 +131,6 @@ void handle_interrupts(Cpu* cpu) {
 
 	// Jump to interrupt vector
 	cpu->reg_pc = interrupt_vector;
-
-	// Debug: count V-blank interrupts
-	if (interrupt_vector == 0x0040) {
-		static uint32_t vblank_count = 0;
-		static struct timespec last_print = {0, 0};
-		struct timespec now;
-		clock_gettime(CLOCK_MONOTONIC, &now);
-
-		vblank_count++;
-
-		long elapsed_ns = (now.tv_sec - last_print.tv_sec) * 1000000000L + (now.tv_nsec - last_print.tv_nsec);
-		if (elapsed_ns >= 1000000000L || last_print.tv_sec == 0) {
-			double seconds = elapsed_ns / 1000000000.0;
-			if (last_print.tv_sec != 0) {
-				fprintf(stderr, "V-Blank interrupts handled: %.1f per second\n", vblank_count / seconds);
-			}
-			vblank_count = 0;
-			last_print = now;
-		}
-	}
 
 	// Interrupt handling takes 20 T-cycles = 5 M-cycles
 	cpu->cycles_left = 5;
@@ -205,20 +178,9 @@ void run(Cpu* cpu){
 	clock_gettime(CLOCK_MONOTONIC, &frame_start);
 	next_frame_time = frame_start;
 
-	// Performance tracking
-	struct timespec perf_start = frame_start;
-	uint64_t last_instruction_count = 0;
-	uint32_t frames_executed = 0;
-
 	uint32_t cycles_this_frame = 0;
 
 	while(!cpu->should_stop){
-
-		// Handle delayed IME enable (EI instruction enables interrupts after next instruction)
-		if (cpu->ime_scheduled) {
-			cpu->ime = 1;
-			cpu->ime_scheduled = 0;
-		}
 
 		uint8_t instruction_cycles;
 
@@ -232,6 +194,12 @@ void run(Cpu* cpu){
 			run_instruction(cpu);
 			assert(cpu->cycles_left > 0);
 			instruction_cycles = cpu->cycles_left;
+		}
+
+		// Handle delayed IME enable (EI instruction enables interrupts AFTER next instruction)
+		if (cpu->ime_scheduled) {
+			cpu->ime = 1;
+			cpu->ime_scheduled = 0;
 		}
 
 		// Record the cycles
@@ -252,7 +220,6 @@ void run(Cpu* cpu){
 		// Check if we've completed a frame worth of cycles
 		if (cycles_this_frame >= CYCLES_PER_FRAME) {
 			cycles_this_frame -= CYCLES_PER_FRAME;
-			frames_executed++;
 
 			// Calculate next frame time
 			next_frame_time.tv_nsec += NANOSECONDS_PER_FRAME;
@@ -263,26 +230,6 @@ void run(Cpu* cpu){
 
 			// Sleep until next frame time
 			sleep_until(next_frame_time);
-
-			// Print performance stats every second
-			struct timespec perf_current;
-			clock_gettime(CLOCK_MONOTONIC, &perf_current);
-			long elapsed_ns = (perf_current.tv_sec - perf_start.tv_sec) * 1000000000L +
-			                  (perf_current.tv_nsec - perf_start.tv_nsec);
-			if (elapsed_ns >= 1000000000L) {
-				uint64_t instructions_executed = cpu->instruction_count - last_instruction_count;
-				double seconds = elapsed_ns / 1000000000.0;
-				double fps = frames_executed / seconds;
-				fprintf(stderr, "Performance: %.1f fps, %.2fM instructions/sec (%.1f%% speed)\n",
-				        fps,
-				        instructions_executed / seconds / 1000000.0,
-				        (fps / 59.7) * 100.0);
-
-				// Reset counters
-				perf_start = perf_current;
-				last_instruction_count = cpu->instruction_count;
-				frames_executed = 0;
-			}
 		}
 	}
 	debug_print("cpu execution stopped%s", "\n");

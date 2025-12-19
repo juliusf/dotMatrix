@@ -13,7 +13,7 @@ static inline uint16_t get_two_byte_parameter(Cpu* cpu){
 }
 
 static inline uint8_t get_one_byte_parameter(Cpu* cpu){
-	return read_addr_from_ram(cpu->interconnect, cpu->reg_pc +1);
+	return read_from_ram(cpu->interconnect, cpu->reg_pc +1);
 }
 
 
@@ -32,13 +32,11 @@ static inline void clear_bit(uint8_t* x, int bit_num){
 static inline void pop_stack(Cpu* cpu, uint16_t* target_reg){
 
 	*target_reg = read_addr_from_ram(cpu->interconnect, cpu->reg_sp);
-	debug_print("popping from stack:: 0x%x\n", *target_reg);
 	cpu->reg_sp++;
 	cpu->reg_sp++;
 }
 
 static inline void push_stack(Cpu* cpu, uint16_t addr){
-	debug_print("pushing to stack: 0x%x\n", addr);
 	cpu->reg_sp--;
 	cpu->reg_sp--;
 	write_addr_to_ram(cpu->interconnect, cpu->reg_sp, addr);

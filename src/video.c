@@ -1,6 +1,7 @@
 #include "video.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <raylib.h>
 
 // DMG color palette (grayscale)

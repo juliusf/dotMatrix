@@ -130,7 +130,9 @@ int8_t opCode0x19(Cpu* cpu){ // ADD HL, DE
 
 int8_t opCode0x20(Cpu* cpu){ // JRNZ
 	int8_t addr_offset = get_one_byte_parameter(cpu);
-	if (! get_bit( &(cpu->reg_f), FLAG_BIT_Z)){
+	uint8_t z_flag = get_bit( &(cpu->reg_f), FLAG_BIT_Z);
+
+	if (! z_flag){
 		cpu->reg_pc += addr_offset + 2;
 		cpu->cycles_left = 3; // Branch taken: 12 T-cycles = 3 M-cycles
 		return PC_JMP;
@@ -281,14 +283,6 @@ int8_t opCode0x67(Cpu* cpu){ // LD H, A
 }
 
 int8_t opCode0x76(Cpu* cpu){ // HALT
-	static uint32_t halt_count = 0;
-	halt_count++;
-	if (halt_count == 1 || halt_count % 1000 == 0) {
-		fprintf(stderr, "HALT executed %u times (PC=0x%04x, IME=%d, IE=0x%02x, IF=0x%02x)\n",
-		        halt_count, cpu->reg_pc, cpu->ime,
-		        cpu->interconnect->interrupt_enable,
-		        cpu->interconnect->interrupt_flag);
-	}
 	cpu->halted = 1;
 	return PC_NO_JMP;
 }

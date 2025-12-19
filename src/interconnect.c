@@ -9,6 +9,7 @@
 
 void initialize_interconnect(Interconnect** interconnect, struct Cpu_t** cpu){
 	*interconnect = (Interconnect*) malloc(sizeof(Interconnect));
+	memset(*interconnect, 0, sizeof(Interconnect));
 	memset((*interconnect)->ram, 0xce, RAM_SIZE);
 	initialize_cpu(cpu, (*interconnect));
 	(*interconnect)->cpu = *cpu;
@@ -34,7 +35,6 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 	if (interconnect->inBios && interconnect->cpu->reg_pc >= 0x100){ // Init sequence complete, leaving bios
 		interconnect->inBios = FALSE;
 		debug_print("bios initialization complete%s", "\n");
-		// exit(0); // Removed: let emulator continue running
 	}
 
 	if (addr < 0x100 && interconnect->inBios){
@@ -58,11 +58,6 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 
 	// Timer registers (0xFF04-0xFF07)
 	if (addr == 0xFF04) {
-		static uint8_t last_div_printed = 0;
-		if ((interconnect->div & 0xF0) != (last_div_printed & 0xF0)) {
-			fprintf(stderr, "DIV read: 0x%02x (PC=0x%04x)\n", interconnect->div, interconnect->cpu->reg_pc);
-			last_div_printed = interconnect->div;
-		}
 		return interconnect->div;
 	}
 	if (addr == 0xFF05) return interconnect->tima;
@@ -71,12 +66,6 @@ uint8_t read_from_ram(Interconnect* interconnect, uint16_t addr){
 
 	// Interrupt Flag (IF) - 0xFF0F
 	if (addr == 0xFF0F){
-		static uint32_t if_read_count = 0;
-		if_read_count++;
-		if (if_read_count % 100 == 0) {
-			fprintf(stderr, "IF read %u times (value=0x%02x, PC=0x%04x)\n",
-			        if_read_count, interconnect->interrupt_flag, interconnect->cpu->reg_pc);
-		}
 		return interconnect->interrupt_flag | 0xE0;  // Upper 3 bits always set
 	}
 
@@ -130,16 +119,7 @@ void write_to_ram(Interconnect* interconnect, uint16_t addr, uint8_t value)
 		return;
 	}
 	if (addr == 0xFF07) {
-		uint8_t old_tac = interconnect->tac;
 		interconnect->tac = value & 0x07;  // Only lower 3 bits are writable
-		if (old_tac != interconnect->tac) {
-			const char* freq_names[] = {"4096Hz", "262144Hz", "65536Hz", "16384Hz"};
-			fprintf(stderr, "Timer configured: %s, enabled=%d, TIMA=0x%02x, TMA=0x%02x\n",
-			        freq_names[interconnect->tac & 0x03],
-			        (interconnect->tac & 0x04) ? 1 : 0,
-			        interconnect->tima,
-			        interconnect->tma);
-		}
 		return;
 	}
 
