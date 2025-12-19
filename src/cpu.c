@@ -69,6 +69,7 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	(*cpu)->ime = 0;  // Interrupts disabled at startup
 	(*cpu)->ime_scheduled = 0;
 	(*cpu)->halted = 0;
+	(*cpu)->in_interrupt = 0;
 	initialize_opcodes();
 }
 
@@ -132,8 +133,11 @@ void handle_interrupts(Cpu* cpu) {
 	// Jump to interrupt vector
 	cpu->reg_pc = interrupt_vector;
 
-	// Interrupt handling takes 20 T-cycles = 5 M-cycles
-	cpu->cycles_left = 5;
+	// Mark that we're in an interrupt handler for timing adjustments
+	cpu->in_interrupt = 1;
+
+	// No dispatch overhead for now (testing flag logic)
+	cpu->cycles_left = 0;
 }
 
 // Sleep until target time is reached, using nanosleep for efficiency
@@ -446,7 +450,7 @@ void initialize_opcodes(void){
 	instructions[0xce] = (Instruction){"ADC A,0x%x", 1, 2, opCode0xce};
 	instructions[0xc6] = (Instruction){"ADD A,0x%x", 1, 2, opCode0xc6};
 	instructions[0xc8] = (Instruction){"RET Z", 0, 2, opCode0xc8};
-	instructions[0xc9] = (Instruction){"RET", 0, 4, opCode0xc9};  // Unconditional RET: 16 T-cycles
+	instructions[0xc9] = (Instruction){"RET", 0, 4, opCode0xc9};  // Standard: 4 M-cycles = 16 T-cycles
 	instructions[0xcd] = (Instruction){"CALL $%x", 2, 6, opCode0xcd};  // CALL: 24 T-cycles
 
 	instructions[0xd0] = (Instruction){"RET NC", 0, 2, opCode0xd0};
@@ -454,7 +458,7 @@ void initialize_opcodes(void){
 	instructions[0xd5] = (Instruction){"PUSH DE", 0, 4, opCode0xd5};
 	instructions[0xd6] = (Instruction){"SUB 0x%x", 1, 2, opCode0xd6};
 	instructions[0xd8] = (Instruction){"RET C", 0, 2, opCode0xd8};
-	instructions[0xd9] = (Instruction){"RETI", 0, 4, opCode0xd9};
+	instructions[0xd9] = (Instruction){"RETI", 0, 4, opCode0xd9};  // Standard: 4 M-cycles = 16 T-cycles
 
 	instructions[0xe1] = (Instruction){"POP HL", 0, 3, opCode0xe1};
 	instructions[0xe0] = (Instruction){"LDH 0x%x, A", 1, 3, opCode0xe0};

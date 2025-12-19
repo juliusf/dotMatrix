@@ -638,6 +638,10 @@ int8_t opCode0xc8(Cpu* cpu){ // RET Z
 
 int8_t opCode0xc9(Cpu* cpu){ // RET
 	pop_stack(cpu, &(cpu->reg_pc));
+	// Clear interrupt flag if set (not used for timing, global RET=2 is used instead)
+	if (cpu->in_interrupt) {
+		cpu->in_interrupt = 0;
+	}
 	return PC_JMP;
 }
 
@@ -680,6 +684,10 @@ int8_t opCode0xd5(Cpu* cpu){ // PUSH DE
 int8_t opCode0xd9(Cpu* cpu){ // RETI
 	pop_stack(cpu, &(cpu->reg_pc));
 	cpu->ime = 1;  // Re-enable interrupts immediately
+	// Clear interrupt flag if set
+	if (cpu->in_interrupt) {
+		cpu->in_interrupt = 0;
+	}
 	return PC_JMP;
 }
 
